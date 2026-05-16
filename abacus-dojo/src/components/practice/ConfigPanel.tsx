@@ -3,8 +3,20 @@ import { SOROBAN_LEVELS } from '../../utils/levelConfig';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 
+// Indian abacus system: Level 1 = Beginner, Level 10 = Grandmaster
+function getRankForLevel(lvl: number) {
+  if (lvl <= 2) return 'Beginner';
+  if (lvl <= 4) return 'Intermediate';
+  if (lvl <= 6) return 'Advanced';
+  if (lvl <= 8) return 'Expert';
+  if (lvl <= 9) return 'Master';
+  return 'Grandmaster';
+}
+
 export function ConfigPanel() {
-  const config = useAppStore((s) => s.practiceConfig);
+  const level = useAppStore((s) => s.practiceConfig.level);
+  const timeLimitSeconds = useAppStore((s) => s.practiceConfig.timeLimitSeconds);
+  const overrides = useAppStore((s) => s.practiceConfig.overrides);
   const setConfig = useAppStore((s) => s.setPracticeConfig);
   const startSession = useAppStore((s) => s.startSession);
   const navigate = useNavigate();
@@ -19,31 +31,20 @@ export function ConfigPanel() {
     []
   );
 
-  const currentLevelConfig = SOROBAN_LEVELS[config.level];
+  const currentLevelConfig = SOROBAN_LEVELS[level];
 
   // Generate a sample question for preview
   const sampleOperands = useMemo(() => {
-    const rc = config.overrides.rowCount ?? currentLevelConfig.rowCount;
-    const dc = currentLevelConfig.digitCount;
+    const rc = overrides.rowCount ?? currentLevelConfig.rowCount;
+    const max = Math.pow(10, currentLevelConfig.digitCount) - 1;
+    const additionOnly = currentLevelConfig.operations === 'addition';
     const ops: { sign: string; value: number }[] = [];
     for (let i = 0; i < rc; i++) {
-      const max = Math.pow(10, dc) - 1;
-      const min = Math.pow(10, dc - 1);
-      const val = Math.floor(Math.random() * (max - min + 1)) + min;
-      ops.push({ sign: i === 0 ? '' : (Math.random() > 0.5 ? '+' : '−'), value: val });
+      const val = i === 0 ? 1 : (i < max ? i + 1 : max);
+      ops.push({ sign: i === 0 ? '' : (additionOnly ? '+' : '+' ), value: val });
     }
     return ops;
-  }, [config.level, config.overrides.rowCount, currentLevelConfig]);
-
-  // Indian abacus system: Level 1 = Beginner, Level 10 = Grandmaster
-  const getRankForLevel = (lvl: number) => {
-    if (lvl <= 2) return 'Beginner';
-    if (lvl <= 4) return 'Intermediate';
-    if (lvl <= 6) return 'Advanced';
-    if (lvl <= 8) return 'Expert';
-    if (lvl <= 9) return 'Master';
-    return 'Grandmaster';
-  };
+  }, [overrides.rowCount, currentLevelConfig.digitCount, currentLevelConfig.operations, currentLevelConfig.rowCount]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
@@ -70,14 +71,14 @@ export function ConfigPanel() {
               letterSpacing: '0.05em',
             }}
           >
-            🏆 {getRankForLevel(config.level)}
+            🏆 {getRankForLevel(level)}
           </span>
         </div>
 
         {/* Level Grid */}
         <div className="grid grid-cols-5 gap-3">
           {levels.map((lvl) => {
-            const isSelected = config.level === lvl;
+            const isSelected = level === lvl;
             return (
               <button
                 key={lvl}
@@ -116,7 +117,7 @@ export function ConfigPanel() {
               min={0.5}
               max={15}
               step={0.5}
-              value={config.timeLimitSeconds / 60}
+              value={timeLimitSeconds / 60}
               onChange={(e) => setConfig({ timeLimitSeconds: Math.round(Number(e.target.value) * 60) })}
               className="w-full accent-[var(--color-primary)]"
             />
@@ -130,7 +131,7 @@ export function ConfigPanel() {
                   fontSize: '0.875rem',
                 }}
               >
-                {Math.round(config.timeLimitSeconds / 60 * 10) / 10}
+                {Math.round(timeLimitSeconds / 60 * 10) / 10}
               </span>
               <span>15</span>
             </div>
@@ -141,15 +142,15 @@ export function ConfigPanel() {
             <span className="label-caps">Rows (Operands)</span>
             <select
               className="input-field"
-              value={config.overrides.rowCount || ''}
-              onChange={(e) => {
-                const val = e.target.value;
-                setConfig({
-                  overrides: {
-                    ...config.overrides,
-                    rowCount: val ? Number(val) : undefined,
-                  },
-                });
+              value={overrides.rowCount || ''}
+               onChange={(e) => {
+                 const val = e.target.value;
+                 setConfig({
+                   overrides: {
+                     ...overrides,
+                     rowCount: val ? Number(val) : undefined,
+                   },
+                 });
               }}
             >
               <option value="">Default ({currentLevelConfig.rowCount})</option>

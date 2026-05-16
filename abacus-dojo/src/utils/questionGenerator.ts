@@ -24,7 +24,8 @@ function generateAddSubQuestion(config: LevelConfig, rng: () => number): Questio
   // First operand: positive starting value within digit range
   // Bias higher for subtraction-heavy configs to ensure room for subtraction
   const minFirst = additionOnly ? 1 : Math.max(1, Math.floor(maxVal * 0.3));
-  const first = Math.max(minFirst, Math.floor(rng() * maxVal) + 1);
+  const firstMax = additionOnly ? maxVal - 1 : maxVal;
+  const first = Math.max(minFirst, Math.floor(rng() * Math.max(firstMax, 1)) + 1);
   operands.push(first);
   let runningTotal = first;
 
@@ -32,6 +33,7 @@ function generateAddSubQuestion(config: LevelConfig, rng: () => number): Questio
     // Determine whether we want to subtract this step
     const wantSubtract = !additionOnly && (
       config.operations === 'subtraction' ||
+      config.operations === 'mixed_all' ||
       (config.operations === 'mixed_add_sub' && rng() > 0.5)
     );
 

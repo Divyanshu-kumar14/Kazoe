@@ -57,24 +57,9 @@ interface SessionState {
   finishedAt: number | null;
 }
 
-// --- Sheet Generator State ---
-interface SheetConfig {
-  title: string;
-  includeNameField: boolean;
-  includeDateField: boolean;
-  questionCount: number;
-  questionsPerRow: number;
-  includeAnswerKey: boolean;
-  level: number;
-  seed: string;
-  fontSize: 'small' | 'medium' | 'large';
-  rowCountOverride?: number;
-}
-
 interface AppStore {
   practiceConfig: PracticeConfig;
   session: SessionState;
-  sheetConfig: SheetConfig;
   history: HistoryEntry[];
   theme: 'light' | 'dark';
   // Actions
@@ -82,7 +67,6 @@ interface AppStore {
   startSession: () => void;
   submitAnswer: (answer: number | 'skipped') => void;
   endSession: () => void;
-  setSheetConfig: (c: Partial<SheetConfig>) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
   clearHistory: () => void;
@@ -115,17 +99,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     startedAt: null,
     finishedAt: null,
   },
-  sheetConfig: {
-    title: '',
-    includeNameField: true,
-    includeDateField: true,
-    questionCount: 30,
-    questionsPerRow: 2,
-    includeAnswerKey: false,
-    level: 1,
-    seed: generateSeed(),
-    fontSize: 'medium',
-  },
   history: loadHistory(),
   theme: initialTheme,
   
@@ -152,7 +125,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       ...SOROBAN_LEVELS[practiceConfig.level],
       ...practiceConfig.overrides,
     };
-    const questions = generateQuestions(config, 999, practiceConfig.seed);
+    const maxQuestions = Math.max(50, Math.ceil(practiceConfig.timeLimitSeconds * 2));
+    const questions = generateQuestions(config, maxQuestions, practiceConfig.seed);
     set({ session: {
       status: 'active',
       questions,
@@ -240,9 +214,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     set((s) => ({ session: { ...s.session, status: 'finished', finishedAt } }));
   },
-
-  setSheetConfig: (c) =>
-    set((s) => ({ sheetConfig: { ...s.sheetConfig, ...c } })),
 
   clearHistory: () => {
     saveHistory([]);

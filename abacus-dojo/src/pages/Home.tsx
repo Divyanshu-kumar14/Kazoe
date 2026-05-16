@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useMemo } from 'react';
 import { useAppStore, type HistoryEntry } from '../store/useAppStore';
+import type { Grade } from '../utils/grading';
 
 /* ─── Rank Tiers ─── */
 const RANKS = [
@@ -526,7 +527,7 @@ function StatBlock({ icon, label, value }: { icon: string; label: string; value:
   );
 }
 
-function gradeColor(grade: string) {
+function gradeColor(grade: Grade) {
   switch (grade) {
     case 'S': return '#f59e0b';
     case 'A': return '#10b981';

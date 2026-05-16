@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { SOROBAN_LEVELS } from '../utils/levelConfig';
 
 function getRank(level: number) {
@@ -19,7 +20,10 @@ function getRankIcon(level: number) {
 }
 
 export default function LevelGuide() {
-  const levels = Object.values(SOROBAN_LEVELS).sort((a, b) => a.level - b.level);
+  const levels = useMemo(
+    () => Object.values(SOROBAN_LEVELS).sort((a, b) => a.level - b.level),
+    []
+  );
 
   return (
     <div className="flex-1 animate-fade-in-up">

@@ -15,7 +15,7 @@ export interface SessionResult {
   grade: Grade;
 }
 
-export function computeGrade(accuracy: number, qpm: number, targetQPM: number): Grade {
+function computeGrade(accuracy: number, qpm: number, targetQPM: number): Grade {
   const speedRatio = qpm / targetQPM;
   if (accuracy >= 95 && speedRatio >= 1.0) return 'S';
   if (accuracy >= 88 && speedRatio >= 0.8) return 'A';
@@ -31,13 +31,14 @@ export function computeSessionResult(
   startedAt: number,
   finishedAt: number
 ): SessionResult {
-  const attempted = answers.filter((a) => a !== null).length;
-  const correct   = answers.filter((a, i) => a === questions[i]?.answer).length;
   const skipped   = answers.filter((a) => a === 'skipped').length;
-  const wrong     = attempted - correct - skipped;
+  const attempted = answers.filter((a) => a !== null && a !== 'skipped').length;
+  const correct   = answers.filter((a, i) => a === questions[i]?.answer).length;
+  const wrong     = attempted - correct;
   const accuracy  = attempted > 0 ? (correct / attempted) * 100 : 0;
   const timeUsed  = (finishedAt - startedAt) / 1000;
-  const qpm       = timeUsed > 0 ? (attempted / timeUsed) * 60 : 0;
+  const totalCount = answers.filter((a) => a !== null).length;
+  const qpm       = timeUsed > 0 ? (totalCount / timeUsed) * 60 : 0;
 
   // Best streak
   let streak = 0, bestStreak = 0;
@@ -47,7 +48,7 @@ export function computeSessionResult(
   }
 
   return {
-    totalAttempted: attempted, totalCorrect: correct,
+    totalAttempted: totalCount, totalCorrect: correct,
     totalSkipped: skipped, totalWrong: wrong,
     accuracyPercent: Math.round(accuracy * 10) / 10,
     questionsPerMinute: Math.round(qpm * 10) / 10,

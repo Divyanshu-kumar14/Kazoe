@@ -7,31 +7,6 @@ interface SheetQuestion {
   answer: number;
 }
 
-/**
- * Dynamically compute how many questions fit on one A4 print page.
- *
- * A4 usable height ≈ 267mm (297 − 2×15mm margins).
- * Header ≈ 22mm, footer ≈ 14mm → grid area ≈ 231mm.
- * Each question-cell height ≈ 30mm base + rowCount × 8mm per operand.
- * Grid gap ≈ 10mm per inter-row gap.
- */
-function calcPrintLayout(rowCount: number): { perPage: number; cols: number; rows: number } {
-  const GRID_AREA_MM = 225;
-  const GAP_MM = 10;
-  const cellHeight = 30 + rowCount * 9;
-
-  let gridRows = 1;
-  for (let r = 2; r <= 4; r++) {
-    if (cellHeight * r + GAP_MM * (r - 1) <= GRID_AREA_MM) {
-      gridRows = r;
-    } else {
-      break;
-    }
-  }
-  const cols = 2;
-  return { perPage: gridRows * cols, cols, rows: gridRows };
-}
-
 export default function SheetGenerator() {
   const [level, setLevel] = useState(10);
   const [questionCount, setQuestionCount] = useState(20);
@@ -46,23 +21,19 @@ export default function SheetGenerator() {
     []
   );
 
-  /** Effective row count — either override or level default */
-  const effectiveRowCount = rowOverride ?? levelConfig.rowCount;
+  /** Always 2×2 grid: 4 questions per printed A4 page */
+  const PER_PAGE = 4;
+  const COLS = 2;
+  const ROWS = 2;
 
-  /** Dynamic print layout based on how tall each question is */
-  const printLayout = useMemo(
-    () => calcPrintLayout(effectiveRowCount),
-    [effectiveRowCount]
-  );
-
-  /** Chunk questions into pages of dynamic size */
+  /** Chunk questions into pages of 4 */
   const pages = useMemo(() => {
     const result: SheetQuestion[][] = [];
-    for (let i = 0; i < questions.length; i += printLayout.perPage) {
-      result.push(questions.slice(i, i + printLayout.perPage));
+    for (let i = 0; i < questions.length; i += PER_PAGE) {
+      result.push(questions.slice(i, i + PER_PAGE));
     }
     return result;
-  }, [questions, printLayout.perPage]);
+  }, [questions]);
 
   /** Chunk answer keys — 20 per page */
   const answerPages = useMemo(() => {
@@ -426,16 +397,16 @@ export default function SheetGenerator() {
                     </div>
                   </div>
 
-                  {/* Dynamic question grid — adapts to row count */}
+                  {/* 2×2 question grid */}
                   <div
                     className="sheet-page-grid"
                     style={{
-                      gridTemplateColumns: `repeat(${printLayout.cols}, 1fr)`,
-                      gridTemplateRows: `repeat(${printLayout.rows}, 1fr)`,
+                      gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+                      gridTemplateRows: `repeat(${ROWS}, 1fr)`,
                     }}
                   >
                     {pageQuestions.map((q, qIdx) => {
-                      const globalIdx = pageIdx * printLayout.perPage + qIdx;
+                      const globalIdx = pageIdx * PER_PAGE + qIdx;
                       return (
                         <div key={qIdx} className="sheet-question-cell">
                           <div className="sheet-q-number">Q{globalIdx + 1}</div>

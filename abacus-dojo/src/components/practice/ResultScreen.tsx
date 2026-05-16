@@ -5,21 +5,28 @@ import { SOROBAN_LEVELS } from '../../utils/levelConfig';
 import { useNavigate } from 'react-router-dom';
 
 export function ResultScreen() {
-  const session = useAppStore((s) => s.session);
-  const config = useAppStore((s) => s.practiceConfig);
+  const startedAt = useAppStore((s) => s.session.startedAt);
+  const finishedAt = useAppStore((s) => s.session.finishedAt);
+  const answers = useAppStore((s) => s.session.answers);
+  const questions = useAppStore((s) => s.session.questions);
+  const level = useAppStore((s) => s.practiceConfig.level);
+  const overrides = useAppStore((s) => s.practiceConfig.overrides);
   const navigate = useNavigate();
 
   const result = useMemo(() => {
-    if (!session.startedAt || !session.finishedAt) return null;
-    const levelConfig = SOROBAN_LEVELS[config.level];
+    if (!startedAt || !finishedAt) return null;
+    const levelConfig = {
+      ...SOROBAN_LEVELS[level],
+      ...overrides,
+    };
     return computeSessionResult(
-      session.answers,
-      session.questions,
+      answers,
+      questions,
       levelConfig,
-      session.startedAt,
-      session.finishedAt
+      startedAt,
+      finishedAt
     );
-  }, [session, config.level]);
+  }, [startedAt, finishedAt, answers, questions, level, overrides]);
 
   if (!result) return <div>No result data.</div>;
 
@@ -71,7 +78,7 @@ export function ResultScreen() {
               margin: 0,
             }}
           >
-            Level {config.level}
+            Level {level}
           </p>
         </div>
 

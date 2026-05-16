@@ -3,22 +3,24 @@ import { useAppStore } from '../../store/useAppStore';
 import { useNavigate } from 'react-router-dom';
 
 export function TestInterface() {
-  const session = useAppStore((s) => s.session);
-  const config = useAppStore((s) => s.practiceConfig);
+  const sessionStatus = useAppStore((s) => s.session.status);
+  const currentIndex = useAppStore((s) => s.session.currentIndex);
+  const questions = useAppStore((s) => s.session.questions);
+  const timeLimitSeconds = useAppStore((s) => s.practiceConfig.timeLimitSeconds);
+  const level = useAppStore((s) => s.practiceConfig.level);
   const submitAnswer = useAppStore((s) => s.submitAnswer);
   const endSession = useAppStore((s) => s.endSession);
   const navigate = useNavigate();
 
-  const [timeLeft, setTimeLeft] = useState(config.timeLimitSeconds);
+  const [timeLeft, setTimeLeft] = useState(timeLimitSeconds);
   const [inputVal, setInputVal] = useState('');
   const [shake, setShake] = useState(false);
-  const [answered, setAnswered] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Auto-focus the input on mount and after every submit
   useEffect(() => {
     inputRef.current?.focus();
-  }, [session.currentIndex]);
+  }, [currentIndex]);
 
   // beforeunload warning
   useEffect(() => {
@@ -31,22 +33,38 @@ export function TestInterface() {
   }, []);
 
   // Timer
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const endSessionRef = useRef(endSession);
+  const navigateRef = useRef(navigate);
+
   useEffect(() => {
-    if (timeLeft <= 0) {
-      endSession();
-      navigate('/practice/results', { replace: true });
-      return;
-    }
-    const timer = setInterval(() => setTimeLeft((t) => t - 1), 1000);
-    return () => clearInterval(timer);
-  }, [timeLeft, endSession, navigate]);
+    endSessionRef.current = endSession;
+    navigateRef.current = navigate;
+  });
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          endSessionRef.current();
+          navigateRef.current('/practice/results', { replace: true });
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
   // If somehow finished from outside
   useEffect(() => {
-    if (session.status === 'finished') {
+    if (sessionStatus === 'finished') {
       navigate('/practice/results', { replace: true });
     }
-  }, [session.status, navigate]);
+  }, [sessionStatus, navigate]);
 
   const handleSubmit = useCallback(() => {
     const trimmed = inputVal.trim();
@@ -55,15 +73,13 @@ export function TestInterface() {
       setTimeout(() => setShake(false), 400);
       return;
     }
-    submitAnswer(parseInt(trimmed, 10));
+    submitAnswer(Number(trimmed));
     setInputVal('');
-    setAnswered((a) => a + 1);
   }, [inputVal, submitAnswer]);
 
   const handleSkip = useCallback(() => {
     submitAnswer('skipped');
     setInputVal('');
-    setAnswered((a) => a + 1);
   }, [submitAnswer]);
 
   const handleKeyDown = useCallback(
@@ -79,16 +95,15 @@ export function TestInterface() {
     [handleSubmit, handleSkip]
   );
 
-  const currentQ = session.questions[session.currentIndex];
+  const currentQ = questions[currentIndex];
   if (!currentQ) return null;
 
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
-  const isWarning = timeLeft <= config.timeLimitSeconds * 0.2;
-  const progress = Math.min(
-    ((session.currentIndex) / Math.min(session.questions.length, 50)) * 100,
-    100
-  );
+  const isWarning = timeLeft <= timeLimitSeconds * 0.2;
+  const progress = questions.length > 0
+    ? (currentIndex / questions.length) * 100
+    : 0;
 
   const canSubmit = inputVal.trim().length > 0 && inputVal.trim() !== '-';
 
@@ -131,7 +146,7 @@ export function TestInterface() {
               color: 'var(--color-on-surface-variant)',
             }}
           >
-            Level {config.level}
+            Level {level}
           </span>
         </div>
 
@@ -180,7 +195,7 @@ export function TestInterface() {
             color: 'var(--color-on-surface-variant)',
           }}
         >
-          {answered} done
+          {currentIndex} done
         </span>
       </div>
 
@@ -234,7 +249,7 @@ export function TestInterface() {
               borderRadius: '1rem',
             }}
           >
-            # {session.currentIndex + 1}
+            # {currentIndex + 1}
           </span>
         </div>
 
