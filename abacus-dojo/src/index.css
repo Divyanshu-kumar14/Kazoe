@@ -227,13 +227,19 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+@keyframes confetti-fall {
+  0% { transform: translateY(-20px) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
+}
+
 @keyframes headShake {
-  0% { transform: translateX(0); }
-  6.5% { transform: translateX(-6px) rotateY(-9deg); }
-  18.5% { transform: translateX(5px) rotateY(7deg); }
-  31.5% { transform: translateX(-3px) rotateY(-5deg); }
-  43.5% { transform: translateX(2px) rotateY(3deg); }
-  50% { transform: translateX(0); }
+  0%     { transform: translateX(0); }
+  12.5%  { transform: translateX(-6px) rotateY(-9deg); }
+  25%    { transform: translateX(5px) rotateY(7deg); }
+  37.5%  { transform: translateX(-3px) rotateY(-5deg); }
+  50%    { transform: translateX(2px) rotateY(3deg); }
+  62.5%  { transform: translateX(0); }
+  100%   { transform: translateX(0); }
 }
 
 ::-webkit-scrollbar {
@@ -406,26 +412,22 @@ input[type="number"] {
 /* @media print — the real magic              */
 /* ═══════════════════════════════════════════ */
 @media print {
-  /* Reset page */
   @page {
-    size: A4;
-    margin: 15mm;
+    size: A4 portrait;
+    margin: 10mm;
   }
 
-  /* Hide everything that's not the sheet */
-  body > * {
-    visibility: hidden;
+  /* Hide everything on screen — use visibility so layout is preserved */
+  body * {
+    visibility: hidden !important;
   }
 
-  /* But show the main app container */
-  #root,
-  #root > *,
-  #root > * > *,
-  #root > * > * > * {
-    visibility: visible;
+  /* Show print-only pages and their children */
+  .sheet-print-pages,
+  .sheet-print-pages * {
+    visibility: visible !important;
   }
 
-  /* Hide non-print elements */
   .sheet-no-print,
   .sheet-screen-grid,
   nav,
@@ -435,50 +437,69 @@ input[type="number"] {
     display: none !important;
   }
 
-  /* Show print-only pages */
   .sheet-print-pages {
     display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
   }
 
-  /* Each page gets a forced page break */
   .sheet-page {
     page-break-after: always;
     break-after: page;
-    padding: 0;
+    padding: 1.5mm 0;
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 30mm);
+    height: 277mm; /* A4 height 297mm − 2×10mm margins */
+    box-sizing: border-box;
   }
 
-  /* Last page: no trailing break */
   .sheet-page:last-child {
     page-break-after: auto;
     break-after: auto;
   }
 
-  /* Remove card shadows and borders in print */
   .card {
     box-shadow: none !important;
     border: none !important;
   }
 
-  /* Ensure no background colors interfere */
   body {
     background: white !important;
     color: black !important;
   }
 
-  /* Question cells fill available grid space */
-  .sheet-question-cell {
-    min-height: 0;
-  }
-
-  /* Grid fills available space */
   .sheet-page-grid {
     flex: 1;
+    display: grid;
+    gap: 2mm;
+  }
+
+  .sheet-question-cell {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ccc !important;
   }
 
   .sheet-answer-key-grid {
     flex: 1;
+  }
+
+  .sheet-op-value {
+    color: #000 !important;
+  }
+
+  .sheet-page-title {
+    color: #000 !important;
+  }
+
+  .sheet-page-meta {
+    color: #333 !important;
   }
 }

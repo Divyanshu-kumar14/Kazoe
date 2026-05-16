@@ -1,6 +1,53 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useNavigate } from 'react-router-dom';
+import { useSound } from '../../hooks/useSound';
+
+interface CountdownProps {
+  onDone: () => void;
+}
+
+function Countdown({ onDone }: CountdownProps) {
+  const [count, setCount] = useState(3);
+  const { playTick } = useSound();
+
+  useEffect(() => {
+    if (count === 0) {
+      onDone();
+      return;
+    }
+    playTick();
+    const t = setTimeout(() => setCount((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [count, onDone, playTick]);
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--color-surface)',
+        zIndex: 100,
+      }}
+    >
+      <span
+        key={count}
+        className="animate-scale-in"
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: count === 0 ? '4rem' : '8rem',
+          fontWeight: 700,
+          color: 'var(--color-primary)',
+        }}
+      >
+        {count === 0 ? 'Go!' : count}
+      </span>
+    </div>
+  );
+}
 
 export function TestInterface() {
   const sessionStatus = useAppStore((s) => s.session.status);
@@ -12,10 +59,13 @@ export function TestInterface() {
   const endSession = useAppStore((s) => s.endSession);
   const navigate = useNavigate();
 
+  const [phase, setPhase] = useState<'countdown' | 'playing' | 'paused'>('countdown');
   const [timeLeft, setTimeLeft] = useState(timeLimitSeconds);
   const [inputVal, setInputVal] = useState('');
-  const [shake, setShake] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { playCorrect, playWrong } = useSound();
 
   // Auto-focus the input on mount and after every submit
   useEffect(() => {
@@ -32,58 +82,80 @@ export function TestInterface() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
-  // Timer
+  // Timer interval — only decrements, no side effects
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const endSessionRef = useRef(endSession);
-  const navigateRef = useRef(navigate);
 
   useEffect(() => {
-    endSessionRef.current = endSession;
-    navigateRef.current = navigate;
-  });
-
-  useEffect(() => {
+    if (phase !== 'playing') {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
     timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          endSessionRef.current();
-          navigateRef.current('/practice/results', { replace: true });
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft((prev) => Math.max(0, prev - 1));
     }, 1000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
+  }, [phase]);
 
-  // If somehow finished from outside
+  // Watch for timeLeft reaching 0 or session being finished
   useEffect(() => {
     if (sessionStatus === 'finished') {
       navigate('/practice/results', { replace: true });
+      return;
     }
-  }, [sessionStatus, navigate]);
+    if (phase === 'playing' && timeLeft <= 0) {
+      endSession();
+    }
+  }, [timeLeft, phase, sessionStatus, endSession, navigate]);
+
+  const triggerShake = useCallback(() => {
+    if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+    setShakeKey((k) => k + 1);
+    shakeTimerRef.current = setTimeout(() => setShakeKey(0), 400);
+  }, []);
+
+  // Cleanup shake timer on unmount
+  useEffect(() => {
+    return () => {
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+    };
+  }, []);
 
   const handleSubmit = useCallback(() => {
     const trimmed = inputVal.trim();
     if (!trimmed || trimmed === '-') {
-      setShake(true);
-      setTimeout(() => setShake(false), 400);
+      triggerShake();
+      playWrong();
       return;
     }
-    submitAnswer(Number(trimmed));
+    const answer = Number(trimmed);
+    const currentQ = questions[currentIndex];
+    const isCorrect = currentQ && currentQ.answer === answer;
+
+    if (isCorrect) {
+      playCorrect();
+    } else {
+      playWrong();
+      triggerShake();
+    }
+
+    submitAnswer(answer);
     setInputVal('');
-  }, [inputVal, submitAnswer]);
+  }, [inputVal, submitAnswer, currentIndex, questions, playCorrect, playWrong, triggerShake]);
 
   const handleSkip = useCallback(() => {
     submitAnswer('skipped');
     setInputVal('');
-  }, [submitAnswer]);
+    playWrong();
+  }, [submitAnswer, playWrong]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (phase === 'paused') return;
       if (e.key === 'Enter') {
         e.preventDefault();
         handleSubmit();
@@ -92,8 +164,12 @@ export function TestInterface() {
         handleSkip();
       }
     },
-    [handleSubmit, handleSkip]
+    [handleSubmit, handleSkip, phase]
   );
+
+  const togglePause = useCallback(() => {
+    setPhase((p) => (p === 'playing' ? 'paused' : 'playing'));
+  }, []);
 
   const currentQ = questions[currentIndex];
   if (!currentQ) return null;
@@ -106,6 +182,63 @@ export function TestInterface() {
     : 0;
 
   const canSubmit = inputVal.trim().length > 0 && inputVal.trim() !== '-';
+
+  if (phase === 'countdown') {
+    return <Countdown onDone={() => setPhase('playing')} />;
+  }
+
+  if (phase === 'paused') {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 'calc(100vh - 64px)',
+          padding: '1.5rem 1rem',
+          backgroundColor: 'var(--color-surface)',
+          gap: '2rem',
+        }}
+      >
+        <span
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '3rem',
+            fontWeight: 700,
+            color: 'var(--color-primary)',
+          }}
+        >
+          PAUSED
+        </span>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button
+            onClick={togglePause}
+            className="btn-primary"
+            style={{ fontWeight: 700 }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              play_arrow
+            </span>
+            Resume
+          </button>
+          <button
+            onClick={() => {
+              endSession();
+              navigate('/practice');
+            }}
+            className="btn-secondary"
+            style={{ fontWeight: 700 }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              exit_to_app
+            </span>
+            Quit
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -186,17 +319,44 @@ export function TestInterface() {
           </span>
         </div>
 
-        {/* Answered Count */}
-        <span
-          style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: '0.8125rem',
-            fontWeight: 600,
-            color: 'var(--color-on-surface-variant)',
-          }}
-        >
-          {currentIndex} done
-        </span>
+        {/* Answered Count + Pause */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              color: 'var(--color-on-surface-variant)',
+            }}
+          >
+            {currentIndex} done
+          </span>
+          <button
+            onClick={togglePause}
+            title="Pause session"
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '4px',
+              cursor: 'pointer',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-outline)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--color-surface-container)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              pause
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* ── Progress Bar ── */}
@@ -318,7 +478,7 @@ export function TestInterface() {
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem',
-            animation: shake ? 'headShake 0.4s ease-in-out' : 'none',
+            animation: shakeKey > 0 ? 'headShake 0.4s ease-in-out' : 'none',
           }}
         >
           <span

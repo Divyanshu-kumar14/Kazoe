@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useMemo } from 'react';
-import { useAppStore, type HistoryEntry } from '../store/useAppStore';
+import { useAppStore, type HistoryEntry, type Badge } from '../store/useAppStore';
 import type { Grade } from '../utils/grading';
 
 /* ─── Rank Tiers ─── */
@@ -57,12 +57,12 @@ function computeStats(history: HistoryEntry[]) {
   const totalTimeMinutes = Math.round(history.reduce((s, h) => s + h.result.timeUsedSeconds, 0) / 60);
 
   // Points: 10 * correct answers + bonus for grade
-  const gradeBonus = { S: 50, A: 30, B: 15, C: 5, D: 0 };
+  const gradeBonus: Record<Grade, number> = { S: 50, A: 30, B: 15, C: 5, D: 0 };
   const totalPoints = history.reduce((s, h) =>
     s + (h.result.totalCorrect * 10) + (gradeBonus[h.grade] || 0), 0
   );
 
-  const gradeOrder = ['D', 'C', 'B', 'A', 'S'] as const;
+  const gradeOrder: Grade[] = ['D', 'C', 'B', 'A', 'S'];
   const bestGrade = gradeOrder[Math.max(...history.map(h => gradeOrder.indexOf(h.grade)))] || 'D';
 
   const recentLevel = history[history.length - 1].level;
@@ -88,9 +88,114 @@ function computeStats(history: HistoryEntry[]) {
 
 const DAILY_GOAL = 5; // sessions per day
 
+/* ─── SVG Sparkline ─── */
+function AccuracySparkline({ history }: { history: HistoryEntry[] }) {
+  const recent = history.slice(-20);
+  if (recent.length < 2) return null;
+
+  const W = 300;
+  const H = 60;
+  const pad = 4;
+  const chartW = W - pad * 2;
+  const chartH = H - pad * 2;
+
+  const points = recent.map((h, i) => {
+    const x = pad + (i / (recent.length - 1)) * chartW;
+    const y = pad + chartH - (h.result.accuracyPercent / 100) * chartH;
+    return { x, y, accuracy: h.result.accuracyPercent };
+  });
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary)' }}>
+          trending_up
+        </span>
+        <span className="label-caps">Accuracy Trend</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
+        <polyline
+          fill="none"
+          stroke="var(--color-primary)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          points={points.map(p => `${p.x},${p.y}`).join(' ')}
+        />
+        {points.map((p, i) => (
+          <circle
+            key={i}
+            cx={p.x}
+            cy={p.y}
+            r="3"
+            fill="var(--color-primary)"
+            stroke="var(--color-surface-lowest)"
+            strokeWidth="1.5"
+          >
+            <title>{p.accuracy}%</title>
+          </circle>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+/* ─── Badge Grid ─── */
+function BadgeGrid({ badges }: { badges: Badge[] }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary)' }}>
+          emoji_events
+        </span>
+        <span className="label-caps">Achievements</span>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        {badges.map((badge) => (
+          <div
+            key={badge.id}
+            title={`${badge.name}: ${badge.description}`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.375rem',
+              padding: '0.375rem 0.625rem',
+              borderRadius: '0.5rem',
+              backgroundColor: badge.unlocked
+                ? 'var(--color-primary-container)'
+                : 'var(--color-surface-container)',
+              opacity: badge.unlocked ? 1 : 0.4,
+              transition: 'opacity 0.2s ease, background-color 0.2s ease',
+            }}
+          >
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: '16px',
+                color: badge.unlocked ? 'var(--color-on-primary-container)' : 'var(--color-outline)',
+              }}
+            >
+              {badge.icon}
+            </span>
+            <span
+              className="text-xs font-semibold"
+              style={{
+                color: badge.unlocked ? 'var(--color-on-surface)' : 'var(--color-outline)',
+              }}
+            >
+              {badge.name}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const history = useAppStore(s => s.history);
   const level = useAppStore(s => s.practiceConfig.level);
+  const badges = useAppStore(s => s.badges);
 
   const stats = useMemo(() => computeStats(history), [history]);
   const rank = getRank(stats.totalPoints);
@@ -103,7 +208,7 @@ export default function Home() {
   return (
     <div className="flex-1 animate-fade-in-up">
       <div className="max-w-[1200px] mx-auto px-6 py-10 flex flex-col gap-8">
-        
+
         {/* ─── Hero Card ─── */}
         <div
           className="card p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
@@ -178,7 +283,7 @@ export default function Home() {
 
         {/* ─── Middle Row: Stats + Level Badge ─── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
+
           {/* Performance Stats Card */}
           <div className="card p-6 md:col-span-2 flex flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -330,6 +435,15 @@ export default function Home() {
           </div>
         </div>
 
+        {/* ─── Accuracy Chart + Badges ─── */}
+        {hasHistory && (
+          <div className="card p-6 flex flex-col gap-6">
+            <AccuracySparkline history={history} />
+            <div className="border-t" style={{ borderColor: 'var(--color-outline-variant)', margin: 0 }} />
+            <BadgeGrid badges={badges} />
+          </div>
+        )}
+
         {/* ─── Recent History ─── */}
         {stats.last5.length > 0 && (
           <div className="card p-6 flex flex-col gap-4">
@@ -407,7 +521,7 @@ export default function Home() {
 
         {/* ─── Bottom Row: Feature Cards ─── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
+
           {/* Sheet Generator Card */}
           <Link
             to="/sheets"
