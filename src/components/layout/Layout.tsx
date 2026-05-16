@@ -47,7 +47,7 @@ export function Layout() {
                   letterSpacing: '-0.02em',
                 }}
               >
-                AbacusDojo
+                Kazoe
               </span>
             </Link>
 
@@ -160,10 +160,10 @@ export function Layout() {
                 color: 'var(--color-primary)',
               }}
             >
-              AbacusDojo
+              Kazoe
             </span>
             <span className="text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
-              © 2024 AbacusDojo. Precision in every bead.
+              © 2024 Kazoe. Precision in every bead.
             </span>
             <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
               <span>Print Settings</span>

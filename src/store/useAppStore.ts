@@ -5,7 +5,7 @@ import { computeSessionResult, type SessionResult, type Grade } from '../utils/g
 
 function getInitialTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'light';
-  const saved = localStorage.getItem('abacus-theme');
+  const saved = localStorage.getItem('kazoe-theme');
   if (saved === 'dark' || saved === 'light') return saved;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
@@ -24,7 +24,7 @@ export interface HistoryEntry {
   grade: Grade;
 }
 
-const HISTORY_KEY = 'abacus-history';
+const HISTORY_KEY = 'kazoe-history';
 
 function loadHistory(): HistoryEntry[] {
   if (typeof window === 'undefined') return [];
@@ -59,7 +59,7 @@ const ALL_BADGES: Omit<Badge, 'unlocked' | 'unlockedAt'>[] = [
   { id: 'century', name: 'Century', description: 'Answer 100 questions correctly total', icon: 'military_tech' },
 ];
 
-const ACHIEVEMENTS_KEY = 'abacus-achievements';
+const ACHIEVEMENTS_KEY = 'kazoe-achievements';
 
 function loadAchievements(): Badge[] {
   if (typeof window === 'undefined') return ALL_BADGES.map(b => ({ ...b, unlocked: false, unlockedAt: null }));
@@ -185,7 +185,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setTheme: (theme) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('abacus-theme', theme);
+      localStorage.setItem('kazoe-theme', theme);
       if (theme === 'dark') document.documentElement.classList.add('dark');
       else document.documentElement.classList.remove('dark');
     }

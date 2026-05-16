@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'pwa-192x192.svg', 'pwa-512x512.svg'],
       manifest: {
-        name: 'AbacusDojo',
-        short_name: 'AbacusDojo',
+        name: 'Kazoe',
+        short_name: 'Kazoe',
         description: 'Soroban-style mental arithmetic training platform for precision and speed.',
         theme_color: '#00595c',
         background_color: '#fcf9f4',
