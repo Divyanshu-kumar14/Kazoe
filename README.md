@@ -3,27 +3,21 @@
 **Soroban-style mental arithmetic training platform.**  
 Sharpen your calculation speed and precision through timed drills, printable practice sheets, and a structured 10-level Indian abacus curriculum — all in a modern offline-capable web app.
 
-<div align="center">
-
 <img src="src/assets/home-page.png" alt="Home dashboard" width="700"/>
+
 *Your personal dashboard — track sessions, accuracy trends, rank progression, and achievements at a glance.*
 
-<br/>
-
 <img src="src/assets/practice-mode.png" alt="Practice mode" width="700"/>
+
 *Configure your drill with level, duration, and operand settings, then race against the clock.*
 
-<br/>
-
 <img src="src/assets/sheet-generator.png" alt="Sheet generator" width="700"/>
+
 *Generate printable A4 practice sheets with answer keys — perfect for offline drills.*
 
-<br/>
-
 <img src="src/assets/level-guide.png" alt="Level guide" width="700"/>
-*Browse the full curriculum from Beginner to Grandmaster with detailed level breakdowns.*
 
-</div>
+*Browse the full curriculum from Beginner to Grandmaster with detailed level breakdowns.*
 
 ---
 
