@@ -384,15 +384,11 @@ export function TestInterface() {
 
       {/* ── Question Card (Hero) ── */}
       <div
+        className="w-full max-w-[420px] rounded-2xl overflow-hidden p-5 sm:p-7 md:p-8"
         style={{
-          width: '100%',
-          maxWidth: '380px',
           background: 'var(--color-surface-lowest)',
           border: '1px solid var(--color-outline-variant)',
-          borderRadius: '1rem',
-          padding: '1.75rem 2rem',
           boxShadow: '0 2px 12px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.03)',
-          overflow: 'hidden',
         }}
       >
         {/* Question Counter Badge */}
@@ -413,25 +409,177 @@ export function TestInterface() {
           </span>
         </div>
 
-        {/* Operands */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
-            gap: '0.25rem',
-            paddingRight: '0.25rem',
-          }}
-        >
-          {currentQ.operands.map((op, i) => (
+        {currentQ.operation === 'multiplication' || currentQ.operation === 'division' ? (
+          /* ── Horizontal Layout for Multiplication / Division ── */
+          <div
+            className="animate-fade-in"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '1.25rem',
+            }}
+          >
+            {/* Expression Row: e.g. 97 × 8 = */}
             <div
-              key={i}
-              className="animate-fade-in"
               style={{
                 display: 'flex',
                 alignItems: 'baseline',
+                justifyContent: 'center',
                 gap: '0.75rem',
-                animationDelay: `${i * 50}ms`,
+                flexWrap: 'wrap',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'clamp(2rem, 5vw, 2.75rem)',
+                  fontWeight: 600,
+                  color: 'var(--color-on-surface)',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                {currentQ.operands[0]?.toLocaleString()}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '1.5rem',
+                  fontWeight: 500,
+                  color: 'var(--color-primary)',
+                }}
+              >
+                {currentQ.operation === 'multiplication' ? '×' : '÷'}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'clamp(2rem, 5vw, 2.75rem)',
+                  fontWeight: 600,
+                  color: 'var(--color-on-surface)',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                {currentQ.operands[1]}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '1.5rem',
+                  fontWeight: 500,
+                  color: 'var(--color-outline)',
+                }}
+              >
+                =
+              </span>
+            </div>
+
+            {/* Answer Input */}
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '200px',
+                animation: shakeKey > 0 ? 'headShake 0.4s ease-in-out' : 'none',
+              }}
+            >
+              <input
+                ref={inputRef}
+                type="number"
+                inputMode="numeric"
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="?"
+                autoComplete="off"
+                style={{
+                  width: '100%',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '2.25rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.04em',
+                  color: inputVal ? 'var(--color-primary)' : 'var(--color-outline)',
+                  backgroundColor: 'var(--color-surface-container-low)',
+                  border: 'none',
+                  borderBottom: `3px solid ${inputVal ? 'var(--color-primary)' : 'var(--color-outline-variant)'}`,
+                  borderRadius: '0.5rem 0.5rem 0 0',
+                  outline: 'none',
+                  textAlign: 'center',
+                  padding: '0.5rem 0.75rem',
+                  transition: 'border-color 0.2s ease, color 0.2s ease',
+                  caretColor: 'var(--color-primary)',
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          /* ── Vertical Layout for Add / Sub ── */
+          <>
+            {/* Operands */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-end',
+                gap: '0.25rem',
+                paddingRight: '0.25rem',
+              }}
+            >
+              {currentQ.operands.map((op, i) => (
+                <div
+                  key={i}
+                  className="animate-fade-in"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    gap: '0.75rem',
+                    animationDelay: `${i * 50}ms`,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '1.125rem',
+                      fontWeight: 500,
+                      color: 'var(--color-outline)',
+                      width: '1.25rem',
+                      textAlign: 'right',
+                    }}
+                  >
+                    {i === 0 ? '' : op < 0 ? '−' : '+'}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '2.25rem',
+                      fontWeight: 500,
+                      color: 'var(--color-on-surface)',
+                      letterSpacing: '0.04em',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {Math.abs(op)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div
+              style={{
+                height: '2px',
+                backgroundColor: 'var(--color-on-surface)',
+                margin: '0.75rem 0',
+                borderRadius: '1px',
+              }}
+            />
+
+            {/* Answer Input Row */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                animation: shakeKey > 0 ? 'headShake 0.4s ease-in-out' : 'none',
               }}
             >
               <span
@@ -442,87 +590,42 @@ export function TestInterface() {
                   color: 'var(--color-outline)',
                   width: '1.25rem',
                   textAlign: 'right',
+                  flexShrink: 0,
                 }}
               >
-                {i === 0 ? '' : op < 0 ? '−' : '+'}
+                =
               </span>
-              <span
+              <input
+                ref={inputRef}
+                type="number"
+                inputMode="numeric"
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="?"
+                autoComplete="off"
                 style={{
+                  width: '100%',
+                  minWidth: 0,
                   fontFamily: 'var(--font-mono)',
                   fontSize: '2.25rem',
                   fontWeight: 500,
-                  color: 'var(--color-on-surface)',
                   letterSpacing: '0.04em',
-                  lineHeight: 1.2,
+                  color: inputVal ? 'var(--color-primary)' : 'var(--color-outline)',
+                  backgroundColor: 'var(--color-surface-container-low)',
+                  border: 'none',
+                  borderBottom: `2px solid ${inputVal ? 'var(--color-primary)' : 'var(--color-outline-variant)'}`,
+                  borderRadius: '0.375rem 0.375rem 0 0',
+                  outline: 'none',
+                  textAlign: 'right',
+                  padding: '0.375rem 0.625rem',
+                  transition: 'border-color 0.2s ease, color 0.2s ease',
+                  caretColor: 'var(--color-primary)',
                 }}
-              >
-                {Math.abs(op)}
-              </span>
+              />
             </div>
-          ))}
-        </div>
-
-        {/* Divider */}
-        <div
-          style={{
-            height: '2px',
-            backgroundColor: 'var(--color-on-surface)',
-            margin: '0.75rem 0',
-            borderRadius: '1px',
-          }}
-        />
-
-        {/* Answer Input Row */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            animation: shakeKey > 0 ? 'headShake 0.4s ease-in-out' : 'none',
-          }}
-        >
-          <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '1.125rem',
-              fontWeight: 500,
-              color: 'var(--color-outline)',
-              width: '1.25rem',
-              textAlign: 'right',
-              flexShrink: 0,
-            }}
-          >
-            =
-          </span>
-          <input
-            ref={inputRef}
-            type="number"
-            inputMode="numeric"
-            value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="?"
-            autoComplete="off"
-            style={{
-              width: '100%',
-              minWidth: 0,
-              fontFamily: 'var(--font-mono)',
-              fontSize: '2.25rem',
-              fontWeight: 500,
-              letterSpacing: '0.04em',
-              color: inputVal ? 'var(--color-primary)' : 'var(--color-outline)',
-              backgroundColor: 'var(--color-surface-container-low)',
-              border: 'none',
-              borderBottom: `2px solid ${inputVal ? 'var(--color-primary)' : 'var(--color-outline-variant)'}`,
-              borderRadius: '0.375rem 0.375rem 0 0',
-              outline: 'none',
-              textAlign: 'right',
-              padding: '0.375rem 0.625rem',
-              transition: 'border-color 0.2s ease, color 0.2s ease',
-              caretColor: 'var(--color-primary)',
-            }}
-          />
-        </div>
+          </>
+        )}
       </div>
 
       {/* ── Action Buttons ── */}

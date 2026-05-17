@@ -211,9 +211,9 @@ export default function Home() {
 
         {/* ─── Hero Card ─── */}
         <div
-          className="card p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+          className="card p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left"
         >
-          <div className="flex flex-col gap-3 max-w-lg">
+          <div className="flex flex-col items-center md:items-start gap-3 max-w-lg">
             <h1
               style={{
                 fontFamily: 'var(--font-display)',

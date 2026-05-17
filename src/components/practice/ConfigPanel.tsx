@@ -1,5 +1,6 @@
 import { useAppStore } from '../../store/useAppStore';
 import { SOROBAN_LEVELS } from '../../utils/levelConfig';
+import { generateQuestion } from '../../utils/questionGenerator';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 
@@ -17,6 +18,7 @@ export function ConfigPanel() {
   const level = useAppStore((s) => s.practiceConfig.level);
   const timeLimitSeconds = useAppStore((s) => s.practiceConfig.timeLimitSeconds);
   const overrides = useAppStore((s) => s.practiceConfig.overrides);
+  const questionType = useAppStore((s) => s.practiceConfig.questionType);
   const setConfig = useAppStore((s) => s.setPracticeConfig);
   const startSession = useAppStore((s) => s.startSession);
   const navigate = useNavigate();
@@ -33,18 +35,26 @@ export function ConfigPanel() {
 
   const currentLevelConfig = SOROBAN_LEVELS[level];
 
-  // Generate a sample question for preview
+  // Generate a sample question for preview — uses the real difficulty engine
   const sampleOperands = useMemo(() => {
+    if (questionType === 'multiplication' || questionType === 'division') {
+      const cfg = SOROBAN_LEVELS[level];
+      const q = generateQuestion(cfg, { operations: questionType });
+      const sym = questionType === 'multiplication' ? '×' : '÷';
+      return [
+        { sign: '', value: q.operands[0] },
+        { sign: sym, value: q.operands[1] },
+      ];
+    }
     const rc = overrides.rowCount ?? currentLevelConfig.rowCount;
     const max = Math.pow(10, currentLevelConfig.digitCount) - 1;
-    const additionOnly = currentLevelConfig.operations === 'addition';
     const ops: { sign: string; value: number }[] = [];
     for (let i = 0; i < rc; i++) {
       const val = i === 0 ? 1 : (i < max ? i + 1 : max);
-      ops.push({ sign: i === 0 ? '' : (additionOnly ? '+' : '+' ), value: val });
+      ops.push({ sign: i === 0 ? '' : '+' , value: val });
     }
     return ops;
-  }, [overrides.rowCount, currentLevelConfig.digitCount, currentLevelConfig.operations, currentLevelConfig.rowCount]);
+  }, [questionType, level, overrides.rowCount, currentLevelConfig.digitCount, currentLevelConfig.rowCount]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
@@ -107,6 +117,42 @@ export function ConfigPanel() {
           })}
         </div>
 
+        {/* Question Type */}
+        <div className="flex flex-col gap-3">
+          <span className="label-caps">Question Type</span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {([
+              { value: 'add_sub' as const, label: 'Add / Sub', icon: 'add' },
+              { value: 'multiplication' as const, label: 'Multiply', icon: 'close' },
+              { value: 'division' as const, label: 'Division', icon: '÷' },
+            ]).map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setConfig({ questionType: opt.value })}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all"
+                style={{
+                  border: questionType === opt.value
+                    ? '2px solid var(--color-primary)'
+                    : '1px solid var(--color-outline-variant)',
+                  backgroundColor: questionType === opt.value
+                    ? 'var(--color-primary)'
+                    : 'var(--color-surface-container-low)',
+                  color: questionType === opt.value
+                    ? 'var(--color-on-primary)'
+                    : 'var(--color-on-surface)',
+                  cursor: 'pointer',
+                }}
+              >
+                {opt.icon.length > 1
+                  ? <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{opt.icon}</span>
+                  : <span style={{ fontSize: '16px', fontWeight: 700 }}>{opt.icon}</span>
+                }
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Duration + Seed row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Duration */}
@@ -138,27 +184,29 @@ export function ConfigPanel() {
           </div>
 
           {/* Rows Override */}
-          <div className="card p-4 flex flex-col gap-3">
-            <span className="label-caps">Rows (Operands)</span>
-            <select
-              className="input-field"
-              value={overrides.rowCount || ''}
-               onChange={(e) => {
-                 const val = e.target.value;
-                 setConfig({
-                   overrides: {
-                     ...overrides,
-                     rowCount: val ? Number(val) : undefined,
-                   },
-                 });
-              }}
-            >
-              <option value="">Default ({currentLevelConfig.rowCount})</option>
-              {Array.from({ length: 9 }, (_, i) => i + 2).map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-          </div>
+          {questionType === 'add_sub' && (
+            <div className="card p-4 flex flex-col gap-3">
+              <span className="label-caps">Rows (Operands)</span>
+              <select
+                className="input-field"
+                value={overrides.rowCount || ''}
+                 onChange={(e) => {
+                   const val = e.target.value;
+                   setConfig({
+                     overrides: {
+                       ...overrides,
+                       rowCount: val ? Number(val) : undefined,
+                     },
+                   });
+                }}
+              >
+                <option value="">Default ({currentLevelConfig.rowCount})</option>
+                {Array.from({ length: 9 }, (_, i) => i + 2).map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -178,7 +226,7 @@ export function ConfigPanel() {
             Sheet Preview
           </h2>
 
-          {/* Mock question column */}
+          {/* Mock question preview */}
           <div
             className="w-full rounded-lg p-8 flex flex-col items-center"
             style={{
@@ -186,51 +234,118 @@ export function ConfigPanel() {
               border: '1px solid var(--color-outline-variant)',
             }}
           >
-            <div className="flex flex-col items-end gap-2">
-              {sampleOperands.map((op, i) => (
-                <div key={i} className="flex items-baseline gap-4">
+            {questionType === 'multiplication' || questionType === 'division' ? (
+              /* Horizontal preview for mult/div */
+              <div className="flex flex-col items-center gap-4 w-full">
+                <div className="flex items-baseline gap-3">
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '2rem',
+                      fontWeight: 600,
+                      color: 'var(--color-on-surface)',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    {sampleOperands[0]?.value ?? '97'}
+                  </span>
                   <span
                     style={{
                       fontFamily: 'var(--font-mono)',
                       fontSize: '1.25rem',
-                      color: 'var(--color-on-surface-variant)',
-                      width: '1.5rem',
-                      textAlign: 'right',
+                      fontWeight: 500,
+                      color: 'var(--color-primary)',
                     }}
                   >
-                    {op.sign}
+                    {questionType === 'multiplication' ? '×' : '÷'}
                   </span>
                   <span
                     style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: '2.5rem',
-                      fontWeight: 500,
+                      fontSize: '2rem',
+                      fontWeight: 600,
                       color: 'var(--color-on-surface)',
-                      letterSpacing: '0.05em',
+                      letterSpacing: '0.04em',
                     }}
                   >
-                    {op.value}
+                    {sampleOperands[1]?.value ?? '8'}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '1.25rem',
+                      fontWeight: 500,
+                      color: 'var(--color-outline)',
+                    }}
+                  >
+                    =
                   </span>
                 </div>
-              ))}
-            </div>
+                <div
+                  className="rounded-md py-2 text-center"
+                  style={{
+                    width: '120px',
+                    border: '1px dashed var(--color-outline-variant)',
+                    borderBottom: '3px solid var(--color-outline-variant)',
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--color-outline)',
+                    fontSize: '0.875rem',
+                    borderRadius: '0.5rem 0.5rem 0 0',
+                  }}
+                >
+                  ?
+                </div>
+              </div>
+            ) : (
+              /* Vertical preview for add/sub */
+              <>
+                <div className="flex flex-col items-end gap-2">
+                  {sampleOperands.map((op, i) => (
+                    <div key={i} className="flex items-baseline gap-4">
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '1.25rem',
+                          color: 'var(--color-on-surface-variant)',
+                          width: '1.5rem',
+                          textAlign: 'right',
+                        }}
+                      >
+                        {op.sign}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '2.5rem',
+                          fontWeight: 500,
+                          color: 'var(--color-on-surface)',
+                          letterSpacing: '0.05em',
+                        }}
+                      >
+                        {op.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
 
-            <div
-              className="w-full my-4"
-              style={{ height: '2px', backgroundColor: 'var(--color-outline-variant)' }}
-            />
+                <div
+                  className="w-full my-4"
+                  style={{ height: '2px', backgroundColor: 'var(--color-outline-variant)' }}
+                />
 
-            <div
-              className="w-full rounded-md py-2 text-center"
-              style={{
-                border: '1px dashed var(--color-outline-variant)',
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--color-outline)',
-                fontSize: '0.875rem',
-              }}
-            >
-              Answer Here
-            </div>
+                <div
+                  className="w-full rounded-md py-2 text-center"
+                  style={{
+                    border: '1px dashed var(--color-outline-variant)',
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--color-outline)',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Answer Here
+                </div>
+              </>
+            )}
           </div>
 
           <button
