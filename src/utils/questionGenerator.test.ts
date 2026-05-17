@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateQuestions } from './questionGenerator';
+import { generateQuestions, MULT_DIFFICULTY, DIV_DIFFICULTY } from './questionGenerator';
 import { SOROBAN_LEVELS } from './levelConfig';
 
 describe('questionGenerator', () => {
@@ -33,7 +33,7 @@ describe('questionGenerator', () => {
     expect(q1).not.toEqual(q2);
   });
 
-  it('respects digit count constraints', () => {
+  it('respects digit count constraints for addition/subtraction', () => {
     // Level 4 = 2 digits => max 99
     const config = SOROBAN_LEVELS[4];
     const maxVal = Math.pow(10, config.digitCount) - 1;
@@ -73,5 +73,79 @@ describe('questionGenerator', () => {
         expect(q.answer).toBeGreaterThanOrEqual(0);
       });
     }
+  });
+
+  it('generates correct multiplication questions', () => {
+    const config = SOROBAN_LEVELS[4]; // 2-digit
+    const d = MULT_DIFFICULTY[config.level];
+    const questions = generateQuestions(config, 100, 'MUL_TEST', 'multiplication');
+    questions.forEach(q => {
+      expect(q.operation).toBe('multiplication');
+      expect(q.operands.length).toBe(2);
+      expect(q.operands[0]).toBeGreaterThanOrEqual(d.multiplicandMin);
+      expect(q.operands[0]).toBeLessThanOrEqual(d.multiplicandMax);
+      expect(q.operands[1]).toBeGreaterThanOrEqual(d.multiplierMin);
+      expect(q.operands[1]).toBeLessThanOrEqual(d.multiplierMax);
+      expect(q.answer).toBe(q.operands[0] * q.operands[1]);
+    });
+  });
+
+  it('generates correct division questions', () => {
+    const config = SOROBAN_LEVELS[4]; // 2-digit
+    const d = DIV_DIFFICULTY[config.level];
+    const questions = generateQuestions(config, 100, 'DIV_TEST', 'division');
+    questions.forEach(q => {
+      expect(q.operation).toBe('division');
+      expect(q.operands.length).toBe(2);
+      expect(q.operands[1]).toBeGreaterThanOrEqual(d.divisorMin);
+      expect(q.operands[1]).toBeLessThanOrEqual(d.divisorMax);
+      expect(q.operands[0]).toBe(q.operands[1] * q.answer);
+      expect(q.operands[0]).toBeGreaterThanOrEqual(d.dividendMin);
+      expect(q.operands[0]).toBeLessThanOrEqual(d.dividendMax);
+    });
+  });
+
+  it('generates multiplication questions at all levels', () => {
+    for (let level = 1; level <= 10; level++) {
+      const config = SOROBAN_LEVELS[level];
+      const d = MULT_DIFFICULTY[config.level];
+      const questions = generateQuestions(config, 50, `MUL_L${level}`, 'multiplication');
+      questions.forEach(q => {
+        expect(q.answer).toBe(q.operands[0] * q.operands[1]);
+        expect(q.operands[0]).toBeGreaterThanOrEqual(d.multiplicandMin);
+        expect(q.operands[0]).toBeLessThanOrEqual(d.multiplicandMax);
+        expect(q.operands[1]).toBeGreaterThanOrEqual(d.multiplierMin);
+        expect(q.operands[1]).toBeLessThanOrEqual(d.multiplierMax);
+      });
+    }
+  });
+
+  it('generates division questions at all levels', () => {
+    for (let level = 1; level <= 10; level++) {
+      const config = SOROBAN_LEVELS[level];
+      const d = DIV_DIFFICULTY[config.level];
+      const questions = generateQuestions(config, 50, `DIV_L${level}`, 'division');
+      questions.forEach(q => {
+        expect(q.operands[0]).toBe(q.operands[1] * q.answer);
+        expect(q.operands[0]).toBeGreaterThanOrEqual(d.dividendMin);
+        expect(q.operands[0]).toBeLessThanOrEqual(d.dividendMax);
+        expect(q.operands[1]).toBeGreaterThanOrEqual(d.divisorMin);
+        expect(q.operands[1]).toBeLessThanOrEqual(d.divisorMax);
+      });
+    }
+  });
+
+  it('produces deterministic multiplication questions for same seed', () => {
+    const config = SOROBAN_LEVELS[4];
+    const q1 = generateQuestions(config, 20, 'SEEDMUL', 'multiplication');
+    const q2 = generateQuestions(config, 20, 'SEEDMUL', 'multiplication');
+    expect(q1).toEqual(q2);
+  });
+
+  it('produces deterministic division questions for same seed', () => {
+    const config = SOROBAN_LEVELS[4];
+    const q1 = generateQuestions(config, 20, 'SEEDDIV', 'division');
+    const q2 = generateQuestions(config, 20, 'SEEDDIV', 'division');
+    expect(q1).toEqual(q2);
   });
 });

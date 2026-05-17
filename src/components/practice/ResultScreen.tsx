@@ -63,6 +63,7 @@ type ReviewItem = {
   userAnswer: number | 'skipped' | null;
   correctAnswer: number;
   status: 'correct' | 'wrong' | 'skipped' | 'unanswered';
+  operation: 'add_sub' | 'multiplication' | 'division';
 };
 
 export function ResultScreen() {
@@ -99,7 +100,7 @@ export function ResultScreen() {
       else if (userAnswer === null) status = 'unanswered';
       else if (userAnswer === q.answer) status = 'correct';
       else status = 'wrong';
-      return { index: i, operands: q.operands, userAnswer, correctAnswer: q.answer, status };
+      return { index: i, operands: q.operands, userAnswer, correctAnswer: q.answer, status, operation: q.operation };
     });
   }, [questions, answers]);
 
@@ -253,7 +254,7 @@ export function ResultScreen() {
                         }}
                       >
                         {item.operands.map((op, i) =>
-                          `${i === 0 ? '' : (op < 0 ? '−' : '+')}${Math.abs(op)}`
+                          `${i === 0 ? '' : (item.operation === 'multiplication' ? '×' : item.operation === 'division' ? '÷' : op < 0 ? '−' : '+')}${Math.abs(op)}`
                         ).join(' ')}
                         {' = '}
                         <span style={{ fontWeight: 700 }}>{item.correctAnswer}</span>

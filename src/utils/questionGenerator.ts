@@ -5,6 +5,7 @@ export interface Question {
   operands: number[];           // signed: positive = add, negative = subtract
   answer: number;
   seed: string;
+  operation: 'add_sub' | 'multiplication' | 'division';
 }
 
 /**
@@ -65,7 +66,100 @@ function generateAddSubQuestion(config: LevelConfig, rng: () => number): Questio
     }
   }
 
-  return { operands, answer: runningTotal, seed: '' };
+  return { operands, answer: runningTotal, seed: '', operation: 'add_sub' };
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * MULTIPLICATION — Level-based difficulty scaling
+ *
+ *  Level  Multiplicand      Multiplier     Example
+ *  1      2-digit (10-99)   1-digit (2-9)  45 × 7
+ *  2      3-digit (100-999) 1-digit (2-9)  232 × 8
+ *  3      3-digit           1-digit        547 × 6
+ *  4      4-digit           1-digit        3421 × 5
+ *  5      4-digit           1-digit        7856 × 9
+ *  6      3-digit           2-digit (11-99) 342 × 27
+ *  7      4-digit           2-digit        2345 × 34
+ *  8      5-digit           1-digit        45678 × 7
+ *  9      5-digit           2-digit        23456 × 45
+ *  10     5-digit+          2-digit        67890 × 78
+ * ═══════════════════════════════════════════════════════════════════ */
+export interface MultDifficultyEntry {
+  multiplicandMin: number;
+  multiplicandMax: number;
+  multiplierMin: number;
+  multiplierMax: number;
+}
+
+export const MULT_DIFFICULTY: Record<number, MultDifficultyEntry> = {
+  1:  { multiplicandMin: 10,    multiplicandMax: 99,    multiplierMin: 2,  multiplierMax: 9 },
+  2:  { multiplicandMin: 100,   multiplicandMax: 999,   multiplierMin: 2,  multiplierMax: 9 },
+  3:  { multiplicandMin: 100,   multiplicandMax: 999,   multiplierMin: 2,  multiplierMax: 9 },
+  4:  { multiplicandMin: 1000,  multiplicandMax: 9999,  multiplierMin: 2,  multiplierMax: 9 },
+  5:  { multiplicandMin: 1000,  multiplicandMax: 9999,  multiplierMin: 2,  multiplierMax: 9 },
+  6:  { multiplicandMin: 100,   multiplicandMax: 999,   multiplierMin: 11, multiplierMax: 99 },
+  7:  { multiplicandMin: 1000,  multiplicandMax: 9999,  multiplierMin: 11, multiplierMax: 99 },
+  8:  { multiplicandMin: 10000, multiplicandMax: 99999, multiplierMin: 2,  multiplierMax: 9 },
+  9:  { multiplicandMin: 10000, multiplicandMax: 99999, multiplierMin: 11, multiplierMax: 99 },
+  10: { multiplicandMin: 10000, multiplicandMax: 99999, multiplierMin: 11, multiplierMax: 99 },
+};
+
+function generateMultiplicationQuestion(config: LevelConfig, rng: () => number): Question {
+  const lvl = Math.max(1, Math.min(10, config.level));
+  const d = MULT_DIFFICULTY[lvl];
+  const a = Math.floor(rng() * (d.multiplicandMax - d.multiplicandMin + 1)) + d.multiplicandMin;
+  const b = Math.floor(rng() * (d.multiplierMax - d.multiplierMin + 1)) + d.multiplierMin;
+  return { operands: [a, b], answer: a * b, seed: '', operation: 'multiplication' };
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * DIVISION — Level-based difficulty scaling
+ *
+ * Generated as (divisor × quotient) ÷ divisor → always whole-number answer
+ *
+ *  Level  Dividend Digits  Divisor         Example
+ *  1      2-digit          1-digit (2-9)   72 ÷ 8
+ *  2      3-digit          1-digit         256 ÷ 4
+ *  3      3-4 digit        1-digit         2384 ÷ 2
+ *  4      4-digit          1-digit         5670 ÷ 9
+ *  5      4-5 digit        1-digit         23762 ÷ 4 (approx)
+ *  6      5-digit          1-digit         45678 ÷ 6
+ *  7      5-digit          2-digit (11-99) 34560 ÷ 12
+ *  8      5-6 digit        2-digit         123456 ÷ 24
+ *  9      6-digit          2-digit         567890 ÷ 45
+ *  10     6-7 digit        2-digit         1234560 ÷ 78
+ * ═══════════════════════════════════════════════════════════════════ */
+export interface DivDifficultyEntry {
+  dividendMin: number;
+  dividendMax: number;
+  divisorMin: number;
+  divisorMax: number;
+}
+
+export const DIV_DIFFICULTY: Record<number, DivDifficultyEntry> = {
+  1:  { dividendMin: 10,     dividendMax: 99,      divisorMin: 2,  divisorMax: 9 },
+  2:  { dividendMin: 100,    dividendMax: 999,     divisorMin: 2,  divisorMax: 9 },
+  3:  { dividendMin: 100,    dividendMax: 9999,    divisorMin: 2,  divisorMax: 9 },
+  4:  { dividendMin: 1000,   dividendMax: 9999,    divisorMin: 2,  divisorMax: 9 },
+  5:  { dividendMin: 1000,   dividendMax: 99999,   divisorMin: 2,  divisorMax: 9 },
+  6:  { dividendMin: 10000,  dividendMax: 99999,   divisorMin: 2,  divisorMax: 9 },
+  7:  { dividendMin: 10000,  dividendMax: 99999,   divisorMin: 11, divisorMax: 99 },
+  8:  { dividendMin: 10000,  dividendMax: 999999,  divisorMin: 11, divisorMax: 99 },
+  9:  { dividendMin: 100000, dividendMax: 999999,  divisorMin: 11, divisorMax: 99 },
+  10: { dividendMin: 100000, dividendMax: 9999999, divisorMin: 11, divisorMax: 99 },
+};
+
+function generateDivisionQuestion(config: LevelConfig, rng: () => number): Question {
+  const lvl = Math.max(1, Math.min(10, config.level));
+  const d = DIV_DIFFICULTY[lvl];
+  // Pick divisor first
+  const divisor = Math.floor(rng() * (d.divisorMax - d.divisorMin + 1)) + d.divisorMin;
+  // Determine quotient range so that dividend = divisor × quotient falls in [dividendMin, dividendMax]
+  const quotientMin = Math.max(2, Math.ceil(d.dividendMin / divisor));
+  const quotientMax = Math.max(quotientMin, Math.floor(d.dividendMax / divisor));
+  const quotient = Math.floor(rng() * (quotientMax - quotientMin + 1)) + quotientMin;
+  const dividend = divisor * quotient;
+  return { operands: [dividend, divisor], answer: quotient, seed: '', operation: 'division' };
 }
 
 /**
@@ -75,13 +169,17 @@ function generateAddSubQuestion(config: LevelConfig, rng: () => number): Questio
 export function generateQuestions(
   config: LevelConfig,
   count: number,
-  seed: string
+  seed: string,
+  operation: 'add_sub' | 'multiplication' | 'division' = 'add_sub'
 ): Question[] {
   const rng = seedrandom(seed);
   const questions: Question[] = [];
+  const gen = operation === 'multiplication' ? generateMultiplicationQuestion
+            : operation === 'division' ? generateDivisionQuestion
+            : generateAddSubQuestion;
 
   for (let i = 0; i < count; i++) {
-    const q = generateAddSubQuestion(config, rng);
+    const q = gen(config, rng);
     q.seed = seed;
     questions.push(q);
   }
@@ -104,7 +202,10 @@ export function generateQuestion(
 ): Question {
   const merged = { ...config, ...overrides };
   const rng = seedrandom(generateSeed());
-  const q = generateAddSubQuestion(merged, rng);
+  const gen = merged.operations === 'multiplication' ? generateMultiplicationQuestion
+            : merged.operations === 'division' ? generateDivisionQuestion
+            : generateAddSubQuestion;
+  const q = gen(merged, rng);
   q.seed = generateSeed();
   return q;
 }

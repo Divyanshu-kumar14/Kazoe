@@ -84,6 +84,7 @@ interface PracticeConfig {
   timeLimitSeconds: number;
   seed: string;
   overrides: Partial<LevelConfig>; // manual param overrides over level preset
+  questionType: 'add_sub' | 'multiplication' | 'division';
 }
 
 // --- Active Session State ---
@@ -130,6 +131,10 @@ function readURLParams(): Partial<PracticeConfig> {
   }
   const seedParam = params.get('seed');
   if (seedParam) result.seed = seedParam;
+  const typeParam = params.get('type');
+  if (typeParam === 'add_sub' || typeParam === 'multiplication' || typeParam === 'division') {
+    result.questionType = typeParam;
+  }
   return result;
 }
 
@@ -169,6 +174,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     timeLimitSeconds: 120,
     seed: generateSeed(),
     overrides: {},
+    questionType: 'add_sub',
     ...readURLParams(),   // URL params win over defaults
   },
   session: {
@@ -208,7 +214,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       ...practiceConfig.overrides,
     };
     const maxQuestions = Math.max(50, Math.ceil(practiceConfig.timeLimitSeconds * 2));
-    const questions = generateQuestions(config, maxQuestions, seed);
+    const questions = generateQuestions(config, maxQuestions, seed, practiceConfig.questionType);
     set((s) => ({
       practiceConfig: { ...s.practiceConfig, seed },
       session: {
