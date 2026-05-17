@@ -4,6 +4,16 @@ import { generateQuestion } from '../utils/questionGenerator';
 
 type QuestionType = 'add_sub' | 'multiplication' | 'division';
 
+function getOpSymbol(type: QuestionType) {
+  return type === 'multiplication' ? '×' : type === 'division' ? '÷' : '+';
+}
+
+const QUESTION_TYPE_OPTIONS: { value: QuestionType; label: string; icon: string }[] = [
+  { value: 'add_sub', label: 'Add / Sub', icon: 'add' },
+  { value: 'multiplication', label: 'Multiply', icon: 'close' },
+  { value: 'division', label: 'Division', icon: 'percent' },
+];
+
 interface SheetQuestion {
   operands: number[];
   answer: number;
@@ -27,13 +37,10 @@ export default function SheetGenerator() {
 
   const isMultDiv = questionType === 'multiplication' || questionType === 'division';
 
-  /** Always 2×2 grid for add/sub: 4 questions per printed A4 page */
-  /** Mult/div: 10 questions per printed A4 page (list layout) */
   const PER_PAGE = isMultDiv ? 10 : 4;
   const COLS = 2;
   const ROWS = 2;
 
-  /** Chunk questions into pages */
   const pages = useMemo(() => {
     const perPage = isMultDiv ? 10 : 4;
     const result: SheetQuestion[][] = [];
@@ -43,7 +50,6 @@ export default function SheetGenerator() {
     return result;
   }, [questions, isMultDiv]);
 
-  /** Chunk answer keys — 20 per page */
   const answerPages = useMemo(() => {
     const answersPerPage = 20;
     const result: { idx: number; answer: number }[][] = [];
@@ -74,15 +80,10 @@ export default function SheetGenerator() {
     window.print();
   };
 
-  /** Get the operator symbol for mult/div */
-  const getOpSymbol = (type: QuestionType) =>
-    type === 'multiplication' ? '×' : type === 'division' ? '÷' : '+';
-
   return (
     <div className="flex-1 animate-fade-in-up">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col gap-6 sm:gap-8">
         
-        {/* Header — hidden in print */}
         <div className="sheet-no-print">
           <h1
             style={{
@@ -100,15 +101,10 @@ export default function SheetGenerator() {
           </p>
         </div>
 
-        {/* Question Type Selector — hidden in print */}
         <div className="sheet-no-print flex flex-col gap-2">
           <span className="label-caps">Question Type</span>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {([
-              { value: 'add_sub' as QuestionType, label: 'Add / Sub', icon: 'add' },
-              { value: 'multiplication' as QuestionType, label: 'Multiply', icon: 'close' },
-              { value: 'division' as QuestionType, label: 'Division', icon: 'percent' },
-            ]).map((opt) => (
+            {QUESTION_TYPE_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setQuestionType(opt.value)}
@@ -133,7 +129,6 @@ export default function SheetGenerator() {
           </div>
         </div>
 
-        {/* Controls — hidden in print */}
         <div
           className="card p-6 grid gap-4 sheet-no-print"
           style={{
@@ -168,7 +163,6 @@ export default function SheetGenerator() {
             </select>
           </div>
 
-          {/* Columns & Rows — only for add/sub */}
           {!isMultDiv && (
             <>
               <div className="flex flex-col gap-2">
@@ -204,7 +198,6 @@ export default function SheetGenerator() {
           )}
         </div>
 
-        {/* Actions — hidden in print */}
         <div className="flex flex-wrap gap-3 sheet-no-print">
           <button onClick={handleGenerate} className="btn-primary">
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>auto_awesome</span>
@@ -226,13 +219,9 @@ export default function SheetGenerator() {
           )}
         </div>
 
-        {/* ════════════════════════════════════════════════ */}
-        {/* QUESTION GRID — on-screen view                  */}
-        {/* ════════════════════════════════════════════════ */}
         {questions.length > 0 && (
           <>
             {isMultDiv ? (
-              /* ── Mult/Div: horizontal expression list ── */
               <div
                 className="grid gap-3"
                 style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
@@ -389,9 +378,6 @@ export default function SheetGenerator() {
               </div>
             )}
 
-            {/* ════════════════════════════════════════════════ */}
-            {/* ON-SCREEN ANSWER KEY                            */}
-            {/* ════════════════════════════════════════════════ */}
             {showAnswers && (
               <div className="sheet-no-print flex flex-col gap-4">
                 <div
@@ -531,13 +517,9 @@ export default function SheetGenerator() {
             </div>
             )}
 
-            {/* ════════════════════════════════════════════════ */}
-            {/* PRINT-ONLY: paginated pages                     */}
-            {/* ════════════════════════════════════════════════ */}
             <div className="sheet-print-pages">
               {pages.map((pageQuestions, pageIdx) => (
                 <div key={pageIdx} className="sheet-page">
-                  {/* Page header */}
                   <div className="sheet-page-header">
                     <div className="sheet-page-title">
                       {isMultDiv

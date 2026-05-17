@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Home from '../pages/Home';
-import PracticeMode from '../pages/PracticeMode';
-import SheetGenerator from '../pages/SheetGenerator';
-import LevelGuide from '../pages/LevelGuide';
+import { lazy, Suspense } from 'react';
 import { TestInterface } from '../components/practice/TestInterface';
 import { ResultScreen } from '../components/practice/ResultScreen';
 import { useAppStore } from '../store/useAppStore';
 import { Layout } from '../components/layout/Layout';
+
+const Home = lazy(() => import('../pages/Home'));
+const PracticeMode = lazy(() => import('../pages/PracticeMode'));
+const SheetGenerator = lazy(() => import('../pages/SheetGenerator'));
+const LevelGuide = lazy(() => import('../pages/LevelGuide'));
 
 function SessionGuard({ children }: { children: React.ReactNode }) {
   const status = useAppStore((s) => s.session.status);
@@ -26,8 +28,8 @@ export function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/practice" element={<PracticeMode />} />
+          <Route path="/" element={<Suspense fallback={null}><Home /></Suspense>} />
+          <Route path="/practice" element={<Suspense fallback={null}><PracticeMode /></Suspense>} />
           <Route
             path="/practice/session"
             element={
@@ -44,8 +46,8 @@ export function AppRouter() {
               </ResultsGuard>
             }
           />
-          <Route path="/sheets" element={<SheetGenerator />} />
-          <Route path="/levels" element={<LevelGuide />} />
+          <Route path="/sheets" element={<Suspense fallback={null}><SheetGenerator /></Suspense>} />
+          <Route path="/levels" element={<Suspense fallback={null}><LevelGuide /></Suspense>} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -2,7 +2,13 @@ import { useAppStore } from '../../store/useAppStore';
 import { SOROBAN_LEVELS } from '../../utils/levelConfig';
 import { generateQuestion } from '../../utils/questionGenerator';
 import { useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
+
+const QUESTION_TYPE_OPTIONS = [
+  { value: 'add_sub' as const, label: 'Add / Sub', icon: 'add' },
+  { value: 'multiplication' as const, label: 'Multiply', icon: 'close' },
+  { value: 'division' as const, label: 'Division', icon: '÷' },
+];
 
 // Indian abacus system: Level 1 = Beginner, Level 10 = Grandmaster
 function getRankForLevel(lvl: number) {
@@ -14,7 +20,7 @@ function getRankForLevel(lvl: number) {
   return 'Grandmaster';
 }
 
-export function ConfigPanel() {
+export const ConfigPanel = memo(function ConfigPanel() {
   const level = useAppStore((s) => s.practiceConfig.level);
   const timeLimitSeconds = useAppStore((s) => s.practiceConfig.timeLimitSeconds);
   const overrides = useAppStore((s) => s.practiceConfig.overrides);
@@ -121,11 +127,7 @@ export function ConfigPanel() {
         <div className="flex flex-col gap-3">
           <span className="label-caps">Question Type</span>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {([
-              { value: 'add_sub' as const, label: 'Add / Sub', icon: 'add' },
-              { value: 'multiplication' as const, label: 'Multiply', icon: 'close' },
-              { value: 'division' as const, label: 'Division', icon: '÷' },
-            ]).map((opt) => (
+            {QUESTION_TYPE_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setConfig({ questionType: opt.value })}
@@ -360,4 +362,4 @@ export function ConfigPanel() {
       </div>
     </div>
   );
-}
+});

@@ -1,17 +1,17 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 
+const NAV_LINKS = [
+  { to: '/', label: 'Home' },
+  { to: '/practice', label: 'Practice Mode' },
+  { to: '/sheets', label: 'Sheet Generator' },
+  { to: '/levels', label: 'Level Guide' },
+];
+
 export function Layout() {
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const location = useLocation();
-
-  const navLinks = [
-    { to: '/', label: 'Home' },
-    { to: '/practice', label: 'Practice Mode' },
-    { to: '/sheets', label: 'Sheet Generator' },
-    { to: '/levels', label: 'Level Guide' },
-  ];
 
   // Hide navbar during active test session
   const isTestSession = location.pathname === '/practice/session';
@@ -53,7 +53,7 @@ export function Layout() {
 
             {/* Nav Links */}
             <nav className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => (
+              {NAV_LINKS.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
@@ -80,14 +80,12 @@ export function Layout() {
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleTheme}
-                className="w-9 h-9 flex items-center justify-center rounded-full transition-colors"
+                className="w-9 h-9 flex items-center justify-center rounded-full transition-colors icon-btn"
                 style={{
                   color: 'var(--color-on-surface-variant)',
                   backgroundColor: 'transparent',
                   border: 'none',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-surface-container)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 aria-label="Toggle theme"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
@@ -96,14 +94,12 @@ export function Layout() {
               </button>
 
               <button
-                className="w-9 h-9 flex items-center justify-center rounded-full transition-colors"
+                className="w-9 h-9 flex items-center justify-center rounded-full transition-colors icon-btn"
                 style={{
                   color: 'var(--color-on-surface-variant)',
                   backgroundColor: 'transparent',
                   border: 'none',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-surface-container)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 aria-label="Settings"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
@@ -115,7 +111,7 @@ export function Layout() {
 
           {/* Mobile nav */}
           <nav className="flex md:hidden items-center gap-1 px-4 pb-2 overflow-x-auto">
-            {navLinks.map((link) => (
+            {NAV_LINKS.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}

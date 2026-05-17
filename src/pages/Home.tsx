@@ -1,9 +1,8 @@
 import { Link } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { useAppStore, type HistoryEntry, type Badge } from '../store/useAppStore';
 import type { Grade } from '../utils/grading';
 
-/* ─── Rank Tiers ─── */
 const RANKS = [
   { name: 'Beginner',     minPts: 0,    icon: 'kid_star',     color: '#78909c' },
   { name: 'Novice',       minPts: 100,  icon: 'star_half',    color: '#26a69a' },
@@ -28,7 +27,6 @@ function getNextRank(points: number) {
   return RANKS[currentIdx + 1];
 }
 
-/* ─── Compute Stats ─── */
 function computeStats(history: HistoryEntry[]) {
   if (history.length === 0) {
     return {
@@ -49,47 +47,63 @@ function computeStats(history: HistoryEntry[]) {
     };
   }
 
-  const totalSessions = history.length;
-  const totalCorrect = history.reduce((s, h) => s + h.result.totalCorrect, 0);
-  const totalAttempted = history.reduce((s, h) => s + h.result.totalAttempted, 0);
-  const avgAccuracy = totalAttempted > 0 ? (totalCorrect / totalAttempted) * 100 : 0;
-  const bestStreak = Math.max(...history.map(h => h.result.bestStreak));
-  const totalTimeMinutes = Math.round(history.reduce((s, h) => s + h.result.timeUsedSeconds, 0) / 60);
-
-  // Points: 10 * correct answers + bonus for grade
-  const gradeBonus: Record<Grade, number> = { S: 50, A: 30, B: 15, C: 5, D: 0 };
-  const totalPoints = history.reduce((s, h) =>
-    s + (h.result.totalCorrect * 10) + (gradeBonus[h.grade] || 0), 0
-  );
-
   const gradeOrder: Grade[] = ['D', 'C', 'B', 'A', 'S'];
-  const bestGrade = gradeOrder[Math.max(...history.map(h => gradeOrder.indexOf(h.grade)))] || 'D';
-
-  const recentLevel = history[history.length - 1].level;
-
-  // Today's stats
+  const gradeBonus: Record<Grade, number> = { S: 50, A: 30, B: 15, C: 5, D: 0 };
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
-  const todayEntries = history.filter(h => h.timestamp >= todayStart.getTime());
-  const todaySessions = todayEntries.length;
-  const todayCorrect = todayEntries.reduce((s, h) => s + h.result.totalCorrect, 0);
-  const todayAttempted = todayEntries.reduce((s, h) => s + h.result.totalAttempted, 0);
-  const todayAccuracy = todayAttempted > 0 ? (todayCorrect / todayAttempted) * 100 : 0;
+  const todayCutoff = todayStart.getTime();
 
+  let totalCorrect = 0;
+  let totalAttempted = 0;
+  let bestStreak = 0;
+  let totalTimeSeconds = 0;
+  let totalPoints = 0;
+  let bestGradeIdx = 0;
+  let todayCorrect = 0;
+  let todayAttempted = 0;
+  let todaySessions = 0;
+
+  for (const entry of history) {
+    totalCorrect += entry.result.totalCorrect;
+    totalAttempted += entry.result.totalAttempted;
+    if (entry.result.bestStreak > bestStreak) bestStreak = entry.result.bestStreak;
+    totalTimeSeconds += entry.result.timeUsedSeconds;
+    totalPoints += entry.result.totalCorrect * 10 + (gradeBonus[entry.grade] || 0);
+    const gradeIndex = gradeOrder.indexOf(entry.grade);
+    if (gradeIndex > bestGradeIdx) bestGradeIdx = gradeIndex;
+
+    if (entry.timestamp >= todayCutoff) {
+      todaySessions++;
+      todayCorrect += entry.result.totalCorrect;
+      todayAttempted += entry.result.totalAttempted;
+    }
+  }
+
+  const avgAccuracy = totalAttempted > 0 ? (totalCorrect / totalAttempted) * 100 : 0;
+  const todayAccuracy = todayAttempted > 0 ? (todayCorrect / todayAttempted) * 100 : 0;
   const last5 = history.slice(-5).reverse();
 
   return {
-    totalSessions, totalCorrect, totalAttempted, avgAccuracy,
-    bestStreak, totalPoints, totalTimeMinutes, bestGrade,
-    recentLevel, todaySessions, todayCorrect, todayAttempted,
-    todayAccuracy, last5,
+    totalSessions: history.length,
+    totalCorrect,
+    totalAttempted,
+    avgAccuracy,
+    bestStreak,
+    totalPoints,
+    totalTimeMinutes: Math.round(totalTimeSeconds / 60),
+    bestGrade: gradeOrder[bestGradeIdx],
+    recentLevel: history[history.length - 1].level,
+    todaySessions,
+    todayCorrect,
+    todayAttempted,
+    todayAccuracy,
+    last5,
   };
 }
 
 const DAILY_GOAL = 5; // sessions per day
 
-/* ─── SVG Sparkline ─── */
-function AccuracySparkline({ history }: { history: HistoryEntry[] }) {
+const AccuracySparkline = memo(function AccuracySparkline({ history }: { history: HistoryEntry[] }) {
   const recent = history.slice(-20);
   if (recent.length < 2) return null;
 
@@ -138,10 +152,9 @@ function AccuracySparkline({ history }: { history: HistoryEntry[] }) {
       </svg>
     </div>
   );
-}
+});
 
-/* ─── Badge Grid ─── */
-function BadgeGrid({ badges }: { badges: Badge[] }) {
+const BadgeGrid = memo(function BadgeGrid({ badges }: { badges: Badge[] }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -190,7 +203,7 @@ function BadgeGrid({ badges }: { badges: Badge[] }) {
       </div>
     </div>
   );
-}
+});
 
 export default function Home() {
   const history = useAppStore(s => s.history);
@@ -209,7 +222,6 @@ export default function Home() {
     <div className="flex-1 animate-fade-in-up">
       <div className="max-w-[1200px] mx-auto px-6 py-10 flex flex-col gap-8">
 
-        {/* ─── Hero Card ─── */}
         <div
           className="card p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left"
         >
@@ -281,10 +293,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ─── Middle Row: Stats + Level Badge ─── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-          {/* Performance Stats Card */}
           <div className="card p-6 md:col-span-2 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -435,7 +445,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ─── Accuracy Chart + Badges ─── */}
         {hasHistory && (
           <div className="card p-6 flex flex-col gap-6">
             <AccuracySparkline history={history} />
@@ -444,7 +453,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ─── Recent History ─── */}
         {stats.last5.length > 0 && (
           <div className="card p-6 flex flex-col gap-4">
             <div className="flex items-center gap-3">
@@ -519,10 +527,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* ─── Bottom Row: Feature Cards ─── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          {/* Sheet Generator Card */}
           <Link
             to="/sheets"
             className="card card-interactive p-6 flex flex-col gap-3 no-underline"
@@ -564,7 +570,6 @@ export default function Home() {
             </span>
           </Link>
 
-          {/* Level Guide Card */}
           <Link
             to="/levels"
             className="card card-interactive p-6 flex flex-col gap-3 no-underline"
@@ -612,9 +617,7 @@ export default function Home() {
   );
 }
 
-/* ─── Helpers ─── */
-
-function StatBlock({ icon, label, value }: { icon: string; label: string; value: string }) {
+const StatBlock = memo(function StatBlock({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <div
       className="flex flex-col items-center gap-1 p-3 rounded-xl"
@@ -639,7 +642,7 @@ function StatBlock({ icon, label, value }: { icon: string; label: string; value:
       <span className="label-caps" style={{ fontSize: '0.6rem' }}>{label}</span>
     </div>
   );
-}
+});
 
 function gradeColor(grade: Grade) {
   switch (grade) {
