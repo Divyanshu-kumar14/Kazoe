@@ -31,16 +31,24 @@ export function computeSessionResult(
   startedAt: number,
   finishedAt: number
 ): SessionResult {
-  const skipped   = answers.filter((a) => a === 'skipped').length;
-  const attempted = answers.filter((a) => a !== null && a !== 'skipped').length;
-  const correct   = answers.filter((a, i) => a === questions[i]?.answer).length;
+  const stats = answers.reduce((acc, a, i) => {
+    if (a === 'skipped') acc.skipped++;
+    else if (a !== null) {
+      acc.attempted++;
+      if (a === questions[i]?.answer) acc.correct++;
+    }
+    return acc;
+  }, { skipped: 0, attempted: 0, correct: 0 });
+
+  const skipped   = stats.skipped;
+  const attempted = stats.attempted;
+  const correct   = stats.correct;
   const wrong     = attempted - correct;
+  const totalCount = attempted + skipped;
   const accuracy  = attempted > 0 ? (correct / attempted) * 100 : 0;
   const timeUsed  = (finishedAt - startedAt) / 1000;
-  const totalCount = answers.filter((a) => a !== null).length;
   const qpm       = timeUsed > 0 ? (totalCount / timeUsed) * 60 : 0;
 
-  // Best streak
   let streak = 0, bestStreak = 0;
   for (let i = 0; i < answers.length; i++) {
     if (answers[i] === questions[i]?.answer) { streak++; bestStreak = Math.max(bestStreak, streak); }

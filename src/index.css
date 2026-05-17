@@ -78,7 +78,6 @@ body {
   color: var(--color-on-surface);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -90,6 +89,13 @@ h1, h2, h3, h4, h5, h6 {
 button, a {
   cursor: pointer;
 }
+
+.icon-btn:hover { background-color: var(--color-surface-container) !important; }
+.skip-btn { background: var(--color-surface-container); transition: background 0.15s ease; }
+.skip-btn:hover { background: var(--color-surface-container-high) !important; }
+.submit-btn { transition: all 0.2s ease; }
+.submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,89,92,0.3); }
+.hover-row:hover { background-color: var(--color-surface-container) !important; }
 
 /* ─── Utility classes ─── */
 .card {
@@ -200,14 +206,17 @@ button, a {
 
 .animate-fade-in-up {
   animation: fadeInUp 0.5s ease-out both;
+  will-change: transform, opacity;
 }
 
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out both;
+  will-change: opacity;
 }
 
 .animate-scale-in {
   animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  will-change: transform, opacity;
 }
 
 /* stagger helpers */
@@ -230,6 +239,10 @@ input[type="number"] {
 @keyframes confetti-fall {
   0% { transform: translateY(-20px) rotate(0deg) scale(1); opacity: 1; }
   100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
+}
+
+.confetti-piece {
+  will-change: transform, opacity;
 }
 
 @keyframes headShake {

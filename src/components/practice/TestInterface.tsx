@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, memo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useNavigate } from 'react-router-dom';
 import { useSound } from '../../hooks/useSound';
@@ -7,7 +7,7 @@ interface CountdownProps {
   onDone: () => void;
 }
 
-function Countdown({ onDone }: CountdownProps) {
+const Countdown = memo(function Countdown({ onDone }: CountdownProps) {
   const [count, setCount] = useState(3);
   const { playTick } = useSound();
 
@@ -47,6 +47,56 @@ function Countdown({ onDone }: CountdownProps) {
       </span>
     </div>
   );
+});
+
+function PausedScreen({ onResume, onQuit }: { onResume: () => void; onQuit: () => void }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 'calc(100vh - 64px)',
+        padding: '1.5rem 1rem',
+        backgroundColor: 'var(--color-surface)',
+        gap: '2rem',
+      }}
+    >
+      <span
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: '3rem',
+          fontWeight: 700,
+          color: 'var(--color-primary)',
+        }}
+      >
+        PAUSED
+      </span>
+      <div style={{ display: 'flex', gap: '1rem' }}>
+        <button
+          onClick={onResume}
+          className="btn-primary"
+          style={{ fontWeight: 700 }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+            play_arrow
+          </span>
+          Resume
+        </button>
+        <button
+          onClick={onQuit}
+          className="btn-secondary"
+          style={{ fontWeight: 700 }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+            exit_to_app
+          </span>
+          Quit
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function TestInterface() {
@@ -64,15 +114,14 @@ export function TestInterface() {
   const [inputVal, setInputVal] = useState('');
   const [shakeKey, setShakeKey] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputValRef = useRef('');
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { playCorrect, playWrong } = useSound();
 
-  // Auto-focus the input on mount and after every submit
   useEffect(() => {
     inputRef.current?.focus();
   }, [currentIndex]);
 
-  // beforeunload warning
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
@@ -82,7 +131,6 @@ export function TestInterface() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
-  // Timer interval — only decrements, no side effects
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -101,7 +149,6 @@ export function TestInterface() {
     };
   }, [phase]);
 
-  // Watch for timeLeft reaching 0 or session being finished
   useEffect(() => {
     if (sessionStatus === 'finished') {
       navigate('/practice/results', { replace: true });
@@ -118,7 +165,6 @@ export function TestInterface() {
     shakeTimerRef.current = setTimeout(() => setShakeKey(0), 400);
   }, []);
 
-  // Cleanup shake timer on unmount
   useEffect(() => {
     return () => {
       if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
@@ -126,15 +172,16 @@ export function TestInterface() {
   }, []);
 
   const handleSubmit = useCallback(() => {
-    const trimmed = inputVal.trim();
+    const val = inputValRef.current;
+    const trimmed = val.trim();
     if (!trimmed || trimmed === '-') {
       triggerShake();
       playWrong();
       return;
     }
     const answer = Number(trimmed);
-    const currentQ = questions[currentIndex];
-    const isCorrect = currentQ && currentQ.answer === answer;
+    const currentQuestion = questions[currentIndex];
+    const isCorrect = currentQuestion && currentQuestion.answer === answer;
 
     if (isCorrect) {
       playCorrect();
@@ -145,7 +192,8 @@ export function TestInterface() {
 
     submitAnswer(answer);
     setInputVal('');
-  }, [inputVal, submitAnswer, currentIndex, questions, playCorrect, playWrong, triggerShake]);
+    inputValRef.current = '';
+  }, [submitAnswer, currentIndex, questions, playCorrect, playWrong, triggerShake]);
 
   const handleSkip = useCallback(() => {
     submitAnswer('skipped');
@@ -171,8 +219,10 @@ export function TestInterface() {
     setPhase((p) => (p === 'playing' ? 'paused' : 'playing'));
   }, []);
 
-  const currentQ = questions[currentIndex];
-  if (!currentQ) return null;
+  const startPlaying = useCallback(() => setPhase('playing'), []);
+
+  const currentQuestion = questions[currentIndex];
+  if (!currentQuestion) return null;
 
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
@@ -184,59 +234,15 @@ export function TestInterface() {
   const canSubmit = inputVal.trim().length > 0 && inputVal.trim() !== '-';
 
   if (phase === 'countdown') {
-    return <Countdown onDone={() => setPhase('playing')} />;
+    return <Countdown onDone={startPlaying} />;
   }
 
   if (phase === 'paused') {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: 'calc(100vh - 64px)',
-          padding: '1.5rem 1rem',
-          backgroundColor: 'var(--color-surface)',
-          gap: '2rem',
-        }}
-      >
-        <span
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '3rem',
-            fontWeight: 700,
-            color: 'var(--color-primary)',
-          }}
-        >
-          PAUSED
-        </span>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button
-            onClick={togglePause}
-            className="btn-primary"
-            style={{ fontWeight: 700 }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-              play_arrow
-            </span>
-            Resume
-          </button>
-          <button
-            onClick={() => {
-              endSession();
-              navigate('/practice');
-            }}
-            className="btn-secondary"
-            style={{ fontWeight: 700 }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-              exit_to_app
-            </span>
-            Quit
-          </button>
-        </div>
-      </div>
+      <PausedScreen
+        onResume={togglePause}
+        onQuit={() => { endSession(); navigate('/practice'); }}
+      />
     );
   }
 
@@ -253,7 +259,6 @@ export function TestInterface() {
         backgroundColor: 'var(--color-surface)',
       }}
     >
-      {/* ── Compact Status Bar ── */}
       <div
         style={{
           display: 'flex',
@@ -283,7 +288,6 @@ export function TestInterface() {
           </span>
         </div>
 
-        {/* Timer Pill */}
         <div
           style={{
             display: 'flex',
@@ -319,7 +323,6 @@ export function TestInterface() {
           </span>
         </div>
 
-        {/* Answered Count + Pause */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span
             style={{
@@ -334,6 +337,7 @@ export function TestInterface() {
           <button
             onClick={togglePause}
             title="Pause session"
+            className="icon-btn"
             style={{
               background: 'none',
               border: 'none',
@@ -345,12 +349,6 @@ export function TestInterface() {
               justifyContent: 'center',
               color: 'var(--color-outline)',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--color-surface-container)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
               pause
@@ -359,11 +357,9 @@ export function TestInterface() {
         </div>
       </div>
 
-      {/* ── Progress Bar ── */}
       <div
+        className="w-full max-w-[380px]"
         style={{
-          width: '100%',
-          maxWidth: '380px',
           height: '3px',
           borderRadius: '2px',
           backgroundColor: 'var(--color-surface-container-high)',
@@ -382,7 +378,6 @@ export function TestInterface() {
         />
       </div>
 
-      {/* ── Question Card (Hero) ── */}
       <div
         className="w-full max-w-[420px] rounded-2xl overflow-hidden p-5 sm:p-7 md:p-8"
         style={{
@@ -391,7 +386,6 @@ export function TestInterface() {
           boxShadow: '0 2px 12px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.03)',
         }}
       >
-        {/* Question Counter Badge */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.25rem' }}>
           <span
             style={{
@@ -409,7 +403,7 @@ export function TestInterface() {
           </span>
         </div>
 
-        {currentQ.operation === 'multiplication' || currentQ.operation === 'division' ? (
+        {currentQuestion.operation === 'multiplication' || currentQuestion.operation === 'division' ? (
           /* ── Horizontal Layout for Multiplication / Division ── */
           <div
             className="animate-fade-in"
@@ -420,7 +414,6 @@ export function TestInterface() {
               gap: '1.25rem',
             }}
           >
-            {/* Expression Row: e.g. 97 × 8 = */}
             <div
               style={{
                 display: 'flex',
@@ -439,7 +432,7 @@ export function TestInterface() {
                   letterSpacing: '0.04em',
                 }}
               >
-                {currentQ.operands[0]?.toLocaleString()}
+                {currentQuestion.operands[0]?.toLocaleString()}
               </span>
               <span
                 style={{
@@ -449,7 +442,7 @@ export function TestInterface() {
                   color: 'var(--color-primary)',
                 }}
               >
-                {currentQ.operation === 'multiplication' ? '×' : '÷'}
+                {currentQuestion.operation === 'multiplication' ? '×' : '÷'}
               </span>
               <span
                 style={{
@@ -460,7 +453,7 @@ export function TestInterface() {
                   letterSpacing: '0.04em',
                 }}
               >
-                {currentQ.operands[1]}
+                {currentQuestion.operands[1]}
               </span>
               <span
                 style={{
@@ -474,7 +467,6 @@ export function TestInterface() {
               </span>
             </div>
 
-            {/* Answer Input */}
             <div
               style={{
                 width: '100%',
@@ -487,7 +479,7 @@ export function TestInterface() {
                 type="number"
                 inputMode="numeric"
                 value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
+                onChange={(e) => { setInputVal(e.target.value); inputValRef.current = e.target.value; }}
                 onKeyDown={handleKeyDown}
                 placeholder="?"
                 autoComplete="off"
@@ -512,9 +504,7 @@ export function TestInterface() {
             </div>
           </div>
         ) : (
-          /* ── Vertical Layout for Add / Sub ── */
           <>
-            {/* Operands */}
             <div
               style={{
                 display: 'flex',
@@ -524,7 +514,7 @@ export function TestInterface() {
                 paddingRight: '0.25rem',
               }}
             >
-              {currentQ.operands.map((op, i) => (
+              {currentQuestion.operands.map((op, i) => (
                 <div
                   key={i}
                   className="animate-fade-in"
@@ -563,7 +553,6 @@ export function TestInterface() {
               ))}
             </div>
 
-            {/* Divider */}
             <div
               style={{
                 height: '2px',
@@ -573,7 +562,6 @@ export function TestInterface() {
               }}
             />
 
-            {/* Answer Input Row */}
             <div
               style={{
                 display: 'flex',
@@ -600,7 +588,7 @@ export function TestInterface() {
                 type="number"
                 inputMode="numeric"
                 value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
+                onChange={(e) => { setInputVal(e.target.value); inputValRef.current = e.target.value; }}
                 onKeyDown={handleKeyDown}
                 placeholder="?"
                 autoComplete="off"
@@ -628,7 +616,6 @@ export function TestInterface() {
         )}
       </div>
 
-      {/* ── Action Buttons ── */}
       <div
         style={{
           display: 'flex',
@@ -640,10 +627,10 @@ export function TestInterface() {
       >
         <button
           onClick={handleSkip}
+          className="skip-btn"
           style={{
             flex: '0 0 auto',
             padding: '0.75rem 1.25rem',
-            background: 'var(--color-surface-container)',
             color: 'var(--color-on-surface-variant)',
             fontFamily: 'var(--font-body)',
             fontWeight: 600,
@@ -651,13 +638,7 @@ export function TestInterface() {
             border: '1px solid var(--color-outline-variant)',
             borderRadius: '0.625rem',
             cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--color-surface-container-high)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--color-surface-container)';
+            background: 'var(--color-surface-container)',
           }}
         >
           Skip
@@ -665,6 +646,7 @@ export function TestInterface() {
         <button
           onClick={handleSubmit}
           disabled={!canSubmit}
+          className="submit-btn"
           style={{
             flex: 1,
             padding: '0.75rem 1.5rem',
@@ -678,24 +660,12 @@ export function TestInterface() {
             cursor: canSubmit ? 'pointer' : 'not-allowed',
             opacity: canSubmit ? 1 : 0.5,
             boxShadow: canSubmit ? '0 2px 8px rgba(0,89,92,0.2)' : 'none',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            if (canSubmit) {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,89,92,0.3)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = canSubmit ? '0 2px 8px rgba(0,89,92,0.2)' : 'none';
           }}
         >
           Submit
         </button>
       </div>
 
-      {/* Keyboard hint */}
       <p
         style={{
           marginTop: '0.875rem',

@@ -85,22 +85,13 @@ export default function LevelGuide() {
                   return (
                     <tr
                       key={l.level}
-                      className="transition-colors"
+                      className="transition-colors hover-row"
                       style={{
                         backgroundColor:
                           i % 2 === 0
                             ? 'var(--color-surface-lowest)'
                             : 'var(--color-surface-container-low)',
                         borderBottom: isLast ? 'none' : '1px solid var(--color-outline-variant)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--color-surface-container)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          i % 2 === 0
-                            ? 'var(--color-surface-lowest)'
-                            : 'var(--color-surface-container-low)';
                       }}
                     >
                       <td

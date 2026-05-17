@@ -36,7 +36,7 @@ function loadHistory(): HistoryEntry[] {
 
 function saveHistory(history: HistoryEntry[]) {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  setTimeout(() => localStorage.setItem(HISTORY_KEY, JSON.stringify(history)), 0);
 }
 
 // --- Achievement Badges ---
@@ -67,7 +67,8 @@ function loadAchievements(): Badge[] {
     const raw = localStorage.getItem(ACHIEVEMENTS_KEY);
     if (raw) {
       const saved = JSON.parse(raw) as Badge[];
-      return ALL_BADGES.map(b => saved.find(s => s.id === b.id) || { ...b, unlocked: false, unlockedAt: null });
+      const savedMap = new Map(saved.map(s => [s.id, s]));
+      return ALL_BADGES.map(b => savedMap.get(b.id) || { ...b, unlocked: false, unlockedAt: null });
     }
   } catch { /* ignore */ }
   return ALL_BADGES.map(b => ({ ...b, unlocked: false, unlockedAt: null }));
@@ -75,7 +76,7 @@ function loadAchievements(): Badge[] {
 
 function saveAchievements(badges: Badge[]) {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(badges));
+  setTimeout(() => localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(badges)), 0);
 }
 
 // --- Practice Config State ---
@@ -122,7 +123,7 @@ function readURLParams(): Partial<PracticeConfig> {
   const levelParam = params.get('level');
   if (levelParam) {
     const level = Number(levelParam);
-    if (!isNaN(level) && level >= 1 && level <= 20) result.level = level;
+    if (!isNaN(level) && level >= 1 && level <= 10) result.level = level;
   }
   const timeParam = params.get('time');
   if (timeParam) {
@@ -140,18 +141,21 @@ function readURLParams(): Partial<PracticeConfig> {
 
 function computeBadgeUpdates(badges: Badge[], history: HistoryEntry[]): Badge[] {
   let tsOffset = 0;
-  const totalCorrect = history.reduce((s, h) => s + h.result.totalCorrect, 0);
-  const bestStreak = history.length > 0 ? Math.max(...history.map(h => h.result.bestStreak)) : 0;
-  const bestGrade = history.reduce<Grade | null>((best, h) => {
-    const order = ['D', 'C', 'B', 'A', 'S'];
-    if (!best || order.indexOf(h.grade) > order.indexOf(best)) return h.grade;
-    return best;
-  }, null);
+  let totalCorrect = 0;
+  let bestStreak = 0;
+  let bestGrade: Grade | null = null;
+  const order = ['D', 'C', 'B', 'A', 'S'];
 
-  return badges.map(b => {
-    if (b.unlocked) return b;
+  for (const entry of history) {
+    totalCorrect += entry.result.totalCorrect;
+    if (entry.result.bestStreak > bestStreak) bestStreak = entry.result.bestStreak;
+    if (!bestGrade || order.indexOf(entry.grade) > order.indexOf(bestGrade)) bestGrade = entry.grade;
+  }
+
+  return badges.map(badge => {
+    if (badge.unlocked) return badge;
     let unlock = false;
-    switch (b.id) {
+    switch (badge.id) {
       case 'first_session': unlock = history.length >= 1; break;
       case 'perfect_score': unlock = history.some(h => h.result.accuracyPercent === 100); break;
       case 'speed_demon': unlock = bestGrade === 'S'; break;
@@ -162,163 +166,152 @@ function computeBadgeUpdates(badges: Badge[], history: HistoryEntry[]): Badge[] 
     }
     if (unlock) {
       tsOffset++;
-      return { ...b, unlocked: true, unlockedAt: Date.now() + tsOffset };
+      return { ...badge, unlocked: true, unlockedAt: Date.now() + tsOffset };
     }
-    return b;
+    return badge;
   });
 }
 
-export const useAppStore = create<AppStore>((set, get) => ({
-  practiceConfig: {
-    level: 1,
-    timeLimitSeconds: 120,
-    seed: generateSeed(),
-    overrides: {},
-    questionType: 'add_sub',
-    ...readURLParams(),   // URL params win over defaults
-  },
-  session: {
-    status: 'idle',
-    questions: [],
-    currentIndex: 0,
-    answers: [],
-    startedAt: null,
-    finishedAt: null,
-  },
-  history: loadHistory(),
-  badges: loadAchievements(),
-  theme: initialTheme,
-
-  setTheme: (theme) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('kazoe-theme', theme);
-      if (theme === 'dark') document.documentElement.classList.add('dark');
-      else document.documentElement.classList.remove('dark');
-    }
-    set({ theme });
-  },
-
-  toggleTheme: () => {
-    const next = get().theme === 'light' ? 'dark' : 'light';
-    get().setTheme(next);
-  },
-
-  setPracticeConfig: (c) =>
-    set((s) => ({ practiceConfig: { ...s.practiceConfig, ...c } })),
-
-  startSession: () => {
-    const { practiceConfig } = get();
-    const seed = generateSeed();
-    const config = {
-      ...SOROBAN_LEVELS[practiceConfig.level],
-      ...practiceConfig.overrides,
+export const useAppStore = create<AppStore>((set, get) => {
+  function finalizeSession(
+    state: AppStore,
+    answers: (number | 'skipped' | null)[],
+    session: SessionState,
+    finishedAt: number
+  ) {
+    const levelConfig = {
+      ...SOROBAN_LEVELS[state.practiceConfig.level],
+      ...state.practiceConfig.overrides,
     };
-    const maxQuestions = Math.max(50, Math.ceil(practiceConfig.timeLimitSeconds * 2));
-    const questions = generateQuestions(config, maxQuestions, seed, practiceConfig.questionType);
-    set((s) => ({
-      practiceConfig: { ...s.practiceConfig, seed },
-      session: {
-      status: 'active',
-      questions,
+    const result = computeSessionResult(
+      answers, session.questions, levelConfig,
+      session.startedAt!, finishedAt
+    );
+    const entry: HistoryEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: finishedAt,
+      level: state.practiceConfig.level,
+      result,
+      grade: result.grade,
+    };
+    const updated = [...state.history, entry];
+    saveHistory(updated);
+    const updatedBadges = computeBadgeUpdates(state.badges, updated);
+    saveAchievements(updatedBadges);
+    set({
+      session: { ...session, status: 'finished', finishedAt },
+      history: updated,
+      badges: updatedBadges,
+    });
+  }
+
+  return {
+    practiceConfig: {
+      level: 1,
+      timeLimitSeconds: 120,
+      seed: generateSeed(),
+      overrides: {},
+      questionType: 'add_sub',
+      ...readURLParams(),
+    },
+    session: {
+      status: 'idle',
+      questions: [],
       currentIndex: 0,
-      answers: new Array(questions.length).fill(null),
-      startedAt: Date.now(),
+      answers: [],
+      startedAt: null,
       finishedAt: null,
-    }}));
-  },
+    },
+    history: loadHistory(),
+    badges: loadAchievements(),
+    theme: initialTheme,
 
-  submitAnswer: (answer) => {
-    const state = get();
-    if (state.session.status === 'finished') return;
-    const answers = [...state.session.answers];
-    answers[state.session.currentIndex] = answer;
-    const nextIndex = state.session.currentIndex + 1;
-    const finished = nextIndex >= state.session.questions.length;
-    const finishedAt = finished ? Date.now() : null;
-
-    const newSession = {
-      ...state.session,
-      answers,
-      currentIndex: nextIndex,
-      status: (finished ? 'finished' : 'active') as SessionState['status'],
-      finishedAt,
-    };
-
-    // Auto-save to history when all questions answered
-    if (finished && state.session.startedAt && finishedAt) {
-      const levelConfig = {
-        ...SOROBAN_LEVELS[state.practiceConfig.level],
-        ...state.practiceConfig.overrides,
-      };
-      const result = computeSessionResult(
-        answers, state.session.questions, levelConfig,
-        state.session.startedAt, finishedAt
-      );
-      const entry: HistoryEntry = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        timestamp: finishedAt,
-        level: state.practiceConfig.level,
-        result,
-        grade: result.grade,
-      };
-      const updated = [...state.history, entry];
-      saveHistory(updated);
-      const updatedBadges = computeBadgeUpdates(state.badges, updated);
-      saveAchievements(updatedBadges);
-      set({ session: newSession, history: updated, badges: updatedBadges });
-    } else {
-      set({ session: newSession });
-    }
-  },
-
-  endSession: () => {
-    const state = get();
-    const finishedAt = Date.now();
-
-    // Save to history if session had meaningful attempts
-    if (state.session.startedAt && state.session.status === 'active') {
-      const answered = state.session.answers.filter(a => a !== null).length;
-      if (answered > 0) {
-        const levelConfig = {
-          ...SOROBAN_LEVELS[state.practiceConfig.level],
-          ...state.practiceConfig.overrides,
-        };
-        const result = computeSessionResult(
-          state.session.answers, state.session.questions, levelConfig,
-          state.session.startedAt, finishedAt
-        );
-        const entry: HistoryEntry = {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          timestamp: finishedAt,
-          level: state.practiceConfig.level,
-          result,
-          grade: result.grade,
-        };
-        const updated = [...state.history, entry];
-        saveHistory(updated);
-        const updatedBadges = computeBadgeUpdates(state.badges, updated);
-        saveAchievements(updatedBadges);
-        set({
-          session: { ...state.session, status: 'finished', finishedAt },
-          history: updated,
-          badges: updatedBadges,
-        });
-        return;
+    setTheme: (theme) => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kazoe-theme', theme);
+        if (theme === 'dark') document.documentElement.classList.add('dark');
+        else document.documentElement.classList.remove('dark');
       }
-    }
+      set({ theme });
+    },
 
-    set((s) => ({ session: { ...s.session, status: 'finished', finishedAt } }));
-  },
+    toggleTheme: () => {
+      const next = get().theme === 'light' ? 'dark' : 'light';
+      get().setTheme(next);
+    },
 
-  clearHistory: () => {
-    saveHistory([]);
-    set({ history: [] });
-  },
+    setPracticeConfig: (c) =>
+      set((s) => ({ practiceConfig: { ...s.practiceConfig, ...c } })),
 
-  unlockBadges: () => {
-    const { badges, history } = get();
-    const updated = computeBadgeUpdates(badges, history);
-    saveAchievements(updated);
-    set({ badges: updated });
-  },
-}));
+    startSession: () => {
+      const { practiceConfig } = get();
+      const seed = generateSeed();
+      const config = {
+        ...SOROBAN_LEVELS[practiceConfig.level],
+        ...practiceConfig.overrides,
+      };
+      const maxQuestions = Math.max(50, Math.ceil(practiceConfig.timeLimitSeconds * 2));
+      const questions = generateQuestions(config, maxQuestions, seed, practiceConfig.questionType);
+      set((s) => ({
+        practiceConfig: { ...s.practiceConfig, seed },
+        session: {
+          status: 'active',
+          questions,
+          currentIndex: 0,
+          answers: new Array(questions.length).fill(null),
+          startedAt: Date.now(),
+          finishedAt: null,
+        }
+      }));
+    },
+
+    submitAnswer: (answer) => {
+      const state = get();
+      if (state.session.status === 'finished') return;
+      const answers = [...state.session.answers];
+      answers[state.session.currentIndex] = answer;
+      const nextIndex = state.session.currentIndex + 1;
+      const finished = nextIndex >= state.session.questions.length;
+      const finishedAt = finished ? Date.now() : null;
+
+      if (finished && state.session.startedAt && finishedAt) {
+        finalizeSession(state, answers, state.session, finishedAt);
+      } else {
+        set({
+          session: {
+            ...state.session,
+            answers,
+            currentIndex: nextIndex,
+            status: finished ? 'finished' : 'active',
+            finishedAt,
+          },
+        });
+      }
+    },
+
+    endSession: () => {
+      const state = get();
+      const finishedAt = Date.now();
+      if (state.session.startedAt && state.session.status === 'active') {
+        const answered = state.session.answers.filter(a => a !== null).length;
+        if (answered > 0) {
+          finalizeSession(state, state.session.answers, state.session, finishedAt);
+          return;
+        }
+      }
+      set((s) => ({ session: { ...s.session, status: 'finished', finishedAt } }));
+    },
+
+    clearHistory: () => {
+      saveHistory([]);
+      set({ history: [] });
+    },
+
+    unlockBadges: () => {
+      const { badges, history } = get();
+      const updated = computeBadgeUpdates(badges, history);
+      saveAchievements(updated);
+      set({ badges: updated });
+    },
+  };
+});

@@ -105,11 +105,11 @@ export const MULT_DIFFICULTY: Record<number, MultDifficultyEntry> = {
 };
 
 function generateMultiplicationQuestion(config: LevelConfig, rng: () => number): Question {
-  const lvl = Math.max(1, Math.min(10, config.level));
-  const d = MULT_DIFFICULTY[lvl];
-  const a = Math.floor(rng() * (d.multiplicandMax - d.multiplicandMin + 1)) + d.multiplicandMin;
-  const b = Math.floor(rng() * (d.multiplierMax - d.multiplierMin + 1)) + d.multiplierMin;
-  return { operands: [a, b], answer: a * b, seed: '', operation: 'multiplication' };
+  const level = Math.max(1, Math.min(10, config.level));
+  const difficulty = MULT_DIFFICULTY[level];
+  const multiplicand = Math.floor(rng() * (difficulty.multiplicandMax - difficulty.multiplicandMin + 1)) + difficulty.multiplicandMin;
+  const multiplier = Math.floor(rng() * (difficulty.multiplierMax - difficulty.multiplierMin + 1)) + difficulty.multiplierMin;
+  return { operands: [multiplicand, multiplier], answer: multiplicand * multiplier, seed: '', operation: 'multiplication' };
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -150,13 +150,11 @@ export const DIV_DIFFICULTY: Record<number, DivDifficultyEntry> = {
 };
 
 function generateDivisionQuestion(config: LevelConfig, rng: () => number): Question {
-  const lvl = Math.max(1, Math.min(10, config.level));
-  const d = DIV_DIFFICULTY[lvl];
-  // Pick divisor first
-  const divisor = Math.floor(rng() * (d.divisorMax - d.divisorMin + 1)) + d.divisorMin;
-  // Determine quotient range so that dividend = divisor × quotient falls in [dividendMin, dividendMax]
-  const quotientMin = Math.max(2, Math.ceil(d.dividendMin / divisor));
-  const quotientMax = Math.max(quotientMin, Math.floor(d.dividendMax / divisor));
+  const level = Math.max(1, Math.min(10, config.level));
+  const difficulty = DIV_DIFFICULTY[level];
+  const divisor = Math.floor(rng() * (difficulty.divisorMax - difficulty.divisorMin + 1)) + difficulty.divisorMin;
+  const quotientMin = Math.max(2, Math.ceil(difficulty.dividendMin / divisor));
+  const quotientMax = Math.max(quotientMin, Math.floor(difficulty.dividendMax / divisor));
   const quotient = Math.floor(rng() * (quotientMax - quotientMin + 1)) + quotientMin;
   const dividend = divisor * quotient;
   return { operands: [dividend, divisor], answer: quotient, seed: '', operation: 'division' };
@@ -174,22 +172,24 @@ export function generateQuestions(
 ): Question[] {
   const rng = seedrandom(seed);
   const questions: Question[] = [];
-  const gen = operation === 'multiplication' ? generateMultiplicationQuestion
+  const generator = operation === 'multiplication' ? generateMultiplicationQuestion
             : operation === 'division' ? generateDivisionQuestion
             : generateAddSubQuestion;
 
   for (let i = 0; i < count; i++) {
-    const q = gen(config, rng);
-    q.seed = seed;
-    questions.push(q);
+    const question = generator(config, rng);
+    question.seed = seed;
+    questions.push(question);
   }
 
   return questions;
 }
 
-/** Generates a random alphanumeric seed */
 export function generateSeed(): string {
-  return Math.random().toString(36).substring(2, 10).toUpperCase();
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 8; i++) result += chars[Math.floor(Math.random() * 36)];
+  return result;
 }
 
 /**
@@ -200,12 +200,12 @@ export function generateQuestion(
   config: LevelConfig,
   overrides?: Partial<LevelConfig>
 ): Question {
-  const merged = { ...config, ...overrides };
+  const operation = overrides?.operations || config.operations;
   const rng = seedrandom(generateSeed());
-  const gen = merged.operations === 'multiplication' ? generateMultiplicationQuestion
-            : merged.operations === 'division' ? generateDivisionQuestion
+  const generator = operation === 'multiplication' ? generateMultiplicationQuestion
+            : operation === 'division' ? generateDivisionQuestion
             : generateAddSubQuestion;
-  const q = gen(merged, rng);
-  q.seed = generateSeed();
-  return q;
+  const question = generator(overrides ? { ...config, ...overrides } : config, rng);
+  question.seed = generateSeed();
+  return question;
 }
