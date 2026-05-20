@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { requireSupabase } from '../lib/supabase';
 import { useMultiplayerStore } from '../store/useMultiplayerStore';
 import type { AnswerPayload, Match } from '../lib/multiplayer';
 import type { RealtimeChannel } from '@supabase/supabase-js';
@@ -42,7 +42,7 @@ export function useMultiplayerGame() {
   useEffect(() => {
     if (!matchId || !userId) return;
 
-    const channel = supabase.channel(`match_room_${matchId}`, {
+    const channel = requireSupabase().channel(`match_room_${matchId}`, {
       config: { presence: { key: userId } },
     });
 
@@ -96,7 +96,7 @@ export function useMultiplayerGame() {
         }
       });
 
-    const dbChannel = supabase
+    const dbChannel = requireSupabase()
       .channel(`match-db-${matchId}`)
       .on('postgres_changes', {
         event: 'UPDATE',
