@@ -36,7 +36,7 @@ function loadHistory(): HistoryEntry[] {
 
 function saveHistory(history: HistoryEntry[]) {
   if (typeof window === 'undefined') return;
-  setTimeout(() => localStorage.setItem(HISTORY_KEY, JSON.stringify(history)), 0);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
 
 // --- Achievement Badges ---
@@ -76,7 +76,7 @@ function loadAchievements(): Badge[] {
 
 function saveAchievements(badges: Badge[]) {
   if (typeof window === 'undefined') return;
-  setTimeout(() => localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(badges)), 0);
+  localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(badges));
 }
 
 // --- Practice Config State ---

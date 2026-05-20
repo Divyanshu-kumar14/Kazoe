@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/practice', label: 'Practice Mode' },
+  { to: '/multiplayer', label: 'Multiplayer' },
   { to: '/sheets', label: 'Sheet Generator' },
   { to: '/levels', label: 'Level Guide' },
 ];

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { SOROBAN_LEVELS } from '../utils/levelConfig';
 
 function getRank(level: number) {
@@ -19,7 +19,7 @@ function getRankIcon(level: number) {
   return 'emoji_events';
 }
 
-export default function LevelGuide() {
+export default memo(function LevelGuide() {
   const levels = useMemo(
     () => Object.values(SOROBAN_LEVELS).sort((a, b) => a.level - b.level),
     []
@@ -224,4 +224,4 @@ export default function LevelGuide() {
       </div>
     </div>
   );
-}
+});

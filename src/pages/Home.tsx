@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { useMemo, memo } from 'react';
-import { useAppStore, type HistoryEntry, type Badge } from '../store/useAppStore';
+import { memo } from 'react';
+import { useAppStore } from '../store/useAppStore';
 import type { Grade } from '../utils/grading';
 
 const RANKS = [
@@ -27,84 +27,10 @@ function getNextRank(points: number) {
   return RANKS[currentIdx + 1];
 }
 
-function computeStats(history: HistoryEntry[]) {
-  if (history.length === 0) {
-    return {
-      totalSessions: 0,
-      totalCorrect: 0,
-      totalAttempted: 0,
-      avgAccuracy: 0,
-      bestStreak: 0,
-      totalPoints: 0,
-      totalTimeMinutes: 0,
-      bestGrade: 'D' as const,
-      recentLevel: 1,
-      todaySessions: 0,
-      todayCorrect: 0,
-      todayAttempted: 0,
-      todayAccuracy: 0,
-      last5: [] as HistoryEntry[],
-    };
-  }
-
-  const gradeOrder: Grade[] = ['D', 'C', 'B', 'A', 'S'];
-  const gradeBonus: Record<Grade, number> = { S: 50, A: 30, B: 15, C: 5, D: 0 };
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayCutoff = todayStart.getTime();
-
-  let totalCorrect = 0;
-  let totalAttempted = 0;
-  let bestStreak = 0;
-  let totalTimeSeconds = 0;
-  let totalPoints = 0;
-  let bestGradeIdx = 0;
-  let todayCorrect = 0;
-  let todayAttempted = 0;
-  let todaySessions = 0;
-
-  for (const entry of history) {
-    totalCorrect += entry.result.totalCorrect;
-    totalAttempted += entry.result.totalAttempted;
-    if (entry.result.bestStreak > bestStreak) bestStreak = entry.result.bestStreak;
-    totalTimeSeconds += entry.result.timeUsedSeconds;
-    totalPoints += entry.result.totalCorrect * 10 + (gradeBonus[entry.grade] || 0);
-    const gradeIndex = gradeOrder.indexOf(entry.grade);
-    if (gradeIndex > bestGradeIdx) bestGradeIdx = gradeIndex;
-
-    if (entry.timestamp >= todayCutoff) {
-      todaySessions++;
-      todayCorrect += entry.result.totalCorrect;
-      todayAttempted += entry.result.totalAttempted;
-    }
-  }
-
-  const avgAccuracy = totalAttempted > 0 ? (totalCorrect / totalAttempted) * 100 : 0;
-  const todayAccuracy = todayAttempted > 0 ? (todayCorrect / todayAttempted) * 100 : 0;
-  const last5 = history.slice(-5).reverse();
-
-  return {
-    totalSessions: history.length,
-    totalCorrect,
-    totalAttempted,
-    avgAccuracy,
-    bestStreak,
-    totalPoints,
-    totalTimeMinutes: Math.round(totalTimeSeconds / 60),
-    bestGrade: gradeOrder[bestGradeIdx],
-    recentLevel: history[history.length - 1].level,
-    todaySessions,
-    todayCorrect,
-    todayAttempted,
-    todayAccuracy,
-    last5,
-  };
-}
-
 const DAILY_GOAL = 5; // sessions per day
 
-const AccuracySparkline = memo(function AccuracySparkline({ history }: { history: HistoryEntry[] }) {
-  const recent = history.slice(-20);
+const AccuracySparkline = memo(function AccuracySparkline({ history }: { history: { result: { accuracyPercent: number } }[] }) {
+  const recent = history;
   if (recent.length < 2) return null;
 
   const W = 300;
@@ -154,7 +80,7 @@ const AccuracySparkline = memo(function AccuracySparkline({ history }: { history
   );
 });
 
-const BadgeGrid = memo(function BadgeGrid({ badges }: { badges: Badge[] }) {
+const BadgeGrid = memo(function BadgeGrid({ badges }: { badges: Array<{ id: string; name: string; description: string; icon: string; unlocked: boolean; unlockedAt: number | null }> }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -206,17 +132,70 @@ const BadgeGrid = memo(function BadgeGrid({ badges }: { badges: Badge[] }) {
 });
 
 export default function Home() {
-  const history = useAppStore(s => s.history);
-  const level = useAppStore(s => s.practiceConfig.level);
-  const badges = useAppStore(s => s.badges);
+  const stats = useAppStore((s) => {
+    const gradeOrder: Grade[] = ['D', 'C', 'B', 'A', 'S'];
+    const gradeBonus: Record<Grade, number> = { S: 50, A: 30, B: 15, C: 5, D: 0 };
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayCutoff = todayStart.getTime();
 
-  const stats = useMemo(() => computeStats(history), [history]);
+    let totalCorrect = 0;
+    let totalAttempted = 0;
+    let bestStreak = 0;
+    let totalTimeSeconds = 0;
+    let totalPoints = 0;
+    let bestGradeIdx = 0;
+    let todayCorrect = 0;
+    let todayAttempted = 0;
+    let todaySessions = 0;
+
+    for (const entry of s.history) {
+      totalCorrect += entry.result.totalCorrect;
+      totalAttempted += entry.result.totalAttempted;
+      if (entry.result.bestStreak > bestStreak) bestStreak = entry.result.bestStreak;
+      totalTimeSeconds += entry.result.timeUsedSeconds;
+      totalPoints += entry.result.totalCorrect * 10 + (gradeBonus[entry.grade] || 0);
+      const gradeIndex = gradeOrder.indexOf(entry.grade);
+      if (gradeIndex > bestGradeIdx) bestGradeIdx = gradeIndex;
+
+      if (entry.timestamp >= todayCutoff) {
+        todaySessions++;
+        todayCorrect += entry.result.totalCorrect;
+        todayAttempted += entry.result.totalAttempted;
+      }
+    }
+
+    const avgAccuracy = totalAttempted > 0 ? (totalCorrect / totalAttempted) * 100 : 0;
+    const todayAccuracy = todayAttempted > 0 ? (todayCorrect / todayAttempted) * 100 : 0;
+    const last5 = s.history.slice(-5).reverse();
+
+    return {
+      totalSessions: s.history.length,
+      totalCorrect,
+      totalAttempted,
+      avgAccuracy,
+      bestStreak,
+      totalPoints,
+      totalTimeMinutes: Math.round(totalTimeSeconds / 60),
+      bestGrade: gradeOrder[bestGradeIdx],
+      recentLevel: s.history.length > 0 ? s.history[s.history.length - 1].level : 1,
+      todaySessions,
+      todayCorrect,
+      todayAttempted,
+      todayAccuracy,
+      last5,
+    };
+  });
+  const level = useAppStore(s => s.practiceConfig.level);
+
+  const sparklineData = useAppStore(s => s.history.slice(-20));
+  const badgeIds = useAppStore(s => s.badges.map(b => ({ id: b.id, name: b.name, description: b.description, icon: b.icon, unlocked: b.unlocked, unlockedAt: b.unlockedAt })));
+  const hasHistory = stats.totalSessions > 0;
+
   const rank = getRank(stats.totalPoints);
   const nextRank = getNextRank(stats.totalPoints);
   const goalProgress = Math.min(stats.todaySessions / DAILY_GOAL, 1);
   const goalPercent = Math.round(goalProgress * 100);
-
-  const hasHistory = stats.totalSessions > 0;
 
   return (
     <div className="flex-1 animate-fade-in-up">
@@ -447,9 +426,9 @@ export default function Home() {
 
         {hasHistory && (
           <div className="card p-6 flex flex-col gap-6">
-            <AccuracySparkline history={history} />
+            <AccuracySparkline history={sparklineData} />
             <div className="border-t" style={{ borderColor: 'var(--color-outline-variant)', margin: 0 }} />
-            <BadgeGrid badges={badges} />
+            <BadgeGrid badges={badgeIds} />
           </div>
         )}
 

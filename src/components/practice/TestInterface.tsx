@@ -180,7 +180,7 @@ export function TestInterface() {
       return;
     }
     const answer = Number(trimmed);
-    const currentQuestion = questions[currentIndex];
+    const currentQuestion = useAppStore.getState().session.questions[currentIndex];
     const isCorrect = currentQuestion && currentQuestion.answer === answer;
 
     if (isCorrect) {
@@ -193,11 +193,12 @@ export function TestInterface() {
     submitAnswer(answer);
     setInputVal('');
     inputValRef.current = '';
-  }, [submitAnswer, currentIndex, questions, playCorrect, playWrong, triggerShake]);
+  }, [submitAnswer, currentIndex, playCorrect, playWrong, triggerShake]);
 
   const handleSkip = useCallback(() => {
     submitAnswer('skipped');
     setInputVal('');
+    inputValRef.current = '';
     playWrong();
   }, [submitAnswer, playWrong]);
 
