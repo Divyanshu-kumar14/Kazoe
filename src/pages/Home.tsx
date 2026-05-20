@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import type { Grade } from '../utils/grading';
 
@@ -132,7 +132,11 @@ const BadgeGrid = memo(function BadgeGrid({ badges }: { badges: Array<{ id: stri
 });
 
 export default function Home() {
-  const stats = useAppStore((s) => {
+  const history = useAppStore((s) => s.history);
+  const level = useAppStore(s => s.practiceConfig.level);
+  const badges = useAppStore((s) => s.badges);
+
+  const stats = useMemo(() => {
     const gradeOrder: Grade[] = ['D', 'C', 'B', 'A', 'S'];
     const gradeBonus: Record<Grade, number> = { S: 50, A: 30, B: 15, C: 5, D: 0 };
     const todayStart = new Date();
@@ -149,7 +153,7 @@ export default function Home() {
     let todayAttempted = 0;
     let todaySessions = 0;
 
-    for (const entry of s.history) {
+    for (const entry of history) {
       totalCorrect += entry.result.totalCorrect;
       totalAttempted += entry.result.totalAttempted;
       if (entry.result.bestStreak > bestStreak) bestStreak = entry.result.bestStreak;
@@ -167,10 +171,10 @@ export default function Home() {
 
     const avgAccuracy = totalAttempted > 0 ? (totalCorrect / totalAttempted) * 100 : 0;
     const todayAccuracy = todayAttempted > 0 ? (todayCorrect / todayAttempted) * 100 : 0;
-    const last5 = s.history.slice(-5).reverse();
+    const last5 = history.slice(-5).reverse();
 
     return {
-      totalSessions: s.history.length,
+      totalSessions: history.length,
       totalCorrect,
       totalAttempted,
       avgAccuracy,
@@ -178,18 +182,17 @@ export default function Home() {
       totalPoints,
       totalTimeMinutes: Math.round(totalTimeSeconds / 60),
       bestGrade: gradeOrder[bestGradeIdx],
-      recentLevel: s.history.length > 0 ? s.history[s.history.length - 1].level : 1,
+      recentLevel: history.length > 0 ? history[history.length - 1].level : 1,
       todaySessions,
       todayCorrect,
       todayAttempted,
       todayAccuracy,
       last5,
     };
-  });
-  const level = useAppStore(s => s.practiceConfig.level);
+  }, [history]);
 
-  const sparklineData = useAppStore(s => s.history.slice(-20));
-  const badgeIds = useAppStore(s => s.badges.map(b => ({ id: b.id, name: b.name, description: b.description, icon: b.icon, unlocked: b.unlocked, unlockedAt: b.unlockedAt })));
+  const sparklineData = useMemo(() => history.slice(-20), [history]);
+  const badgeIds = useMemo(() => badges.map(b => ({ id: b.id, name: b.name, description: b.description, icon: b.icon, unlocked: b.unlocked, unlockedAt: b.unlockedAt })), [badges]);
   const hasHistory = stats.totalSessions > 0;
 
   const rank = getRank(stats.totalPoints);
