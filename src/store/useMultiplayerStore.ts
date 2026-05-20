@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { getUserId } from '../lib/auth';
 import { extractError } from '../lib/errors';
-import { supabase } from '../lib/supabase';
+import { requireSupabase } from '../lib/supabase';
 import {
   type Match,
   type MatchConfig,
@@ -298,7 +298,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     const activeUserId = userId || (await getUserId());
     if (!activeUserId) throw new Error('Not authenticated');
 
-    const { data: matchData, error } = await supabase
+    const { data: matchData, error } = await requireSupabase()
       .from('matches')
       .select('*')
       .eq('id', matchId)
@@ -424,7 +424,7 @@ function scheduleProgressUpdate(
         (a): a is AnswerPayload => a !== null
       );
 
-      const { error } = await supabase.rpc('update_match_progress', {
+      const { error } = await requireSupabase().rpc('update_match_progress', {
         match_id: p.matchId,
         player_num: p.playerNumber,
         player_score: p.playerScore,

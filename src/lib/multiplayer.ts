@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { requireSupabase } from './supabase';
 import type { Question } from '../utils/questionGenerator';
 
 export interface MatchConfig {
@@ -48,7 +48,7 @@ export async function createPrivateMatch(
 ): Promise<string> {
   const code = generateRoomCode();
 
-  const { error } = await supabase.from('matches').insert({
+  const { error } = await requireSupabase().from('matches').insert({
     id: code,
     status: 'waiting',
     is_public: false,
@@ -67,7 +67,7 @@ export async function joinPrivateMatch(
 ): Promise<Match> {
   const normalized = code.toUpperCase().replace(/-/g, '');
 
-  const { data, error } = await supabase.rpc('claim_private_match', {
+  const { data, error } = await requireSupabase().rpc('claim_private_match', {
     room_code: normalized,
     pid: playerId,
   });
@@ -88,7 +88,7 @@ export async function subscribeToMatchUpdate(
   matchId: string,
   onUpdate: (match: Match) => void
 ) {
-  const channel = supabase
+  const channel = requireSupabase()
     .channel(`match-db-${matchId}`)
     .on(
       'postgres_changes',
@@ -112,7 +112,7 @@ export async function finalizeMatch(
   scores: { player1: number; player2: number },
   winnerId: string | null
 ) {
-  await supabase
+  await requireSupabase()
     .from('matches')
     .update({
       status: 'finished',
@@ -123,5 +123,5 @@ export async function finalizeMatch(
 }
 
 export async function cleanupMatch(matchId: string) {
-  await supabase.from('matches').delete().eq('id', matchId);
+  await requireSupabase().from('matches').delete().eq('id', matchId);
 }
