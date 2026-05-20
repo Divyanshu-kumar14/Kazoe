@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { SOROBAN_LEVELS } from '../utils/levelConfig';
 import { generateQuestion } from '../utils/questionGenerator';
 
@@ -20,7 +20,7 @@ interface SheetQuestion {
   operation: QuestionType;
 }
 
-export default function SheetGenerator() {
+export default memo(function SheetGenerator() {
   const [level, setLevel] = useState(10);
   const [questionCount, setQuestionCount] = useState(20);
   const [columns, setColumns] = useState(4);
@@ -38,7 +38,6 @@ export default function SheetGenerator() {
   const isMultDiv = questionType === 'multiplication' || questionType === 'division';
 
   const PER_PAGE = isMultDiv ? 10 : 4;
-  const COLS = 2;
   const ROWS = 2;
 
   const pages = useMemo(() => {
@@ -630,7 +629,7 @@ export default function SheetGenerator() {
                     <div
                       className="sheet-page-grid"
                       style={{
-                        gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+                        gridTemplateColumns: `repeat(${columns}, 1fr)`,
                         gridTemplateRows: `repeat(${ROWS}, 1fr)`,
                       }}
                     >
@@ -726,4 +725,4 @@ export default function SheetGenerator() {
       </div>
     </div>
   );
-}
+});
