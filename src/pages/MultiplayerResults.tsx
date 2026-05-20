@@ -5,13 +5,29 @@ export default function MultiplayerResults() {
   const navigate = useNavigate();
   const { match, playerNumber, scores, myAnswers, opponentAnswers } = useMultiplayerStore();
 
-  if (!match) return null;
+  if (!match) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <p style={{ color: 'var(--color-on-surface-variant)' }}>No match data available</p>
+          <button
+            onClick={() => navigate('/multiplayer', { replace: true })}
+            className="btn-primary mt-4"
+          >
+            Back to Lobby
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const myScore = playerNumber === 1 ? scores[0] : scores[1];
   const oppScore = playerNumber === 1 ? scores[1] : scores[0];
-  const myId = match[playerNumber === 1 ? 'player1_id' : 'player2_id'];
-  const isDraw = match.winner_id === null;
-  const isWinner = !isDraw && match.winner_id === myId;
+
+  // Use local scores as primary source of truth for winner (always available),
+  // falling back to match.winner_id if scores are tied
+  const isDraw = myScore === oppScore;
+  const isWinner = myScore > oppScore;
 
   const myAttempts = myAnswers.filter((a) => a !== null).length;
   const oppAttempts = opponentAnswers.filter((a) => a !== null).length;

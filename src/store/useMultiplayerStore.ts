@@ -158,6 +158,11 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     if (match.status === 'active' && current.matchStatus === 'waiting') {
       set({ match, matchStatus: 'countdown' });
     } else if (match.status === 'finished') {
+      // If we already transitioned to 'finished' locally (from endGame),
+      // don't overwrite the local match/scores — they're the source of truth
+      if (current.matchStatus === 'finished') {
+        return;
+      }
       const dbScores = match.scores;
       const scores: [number, number] = [
         dbScores?.player1 ?? 0,
@@ -269,11 +274,26 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       winnerId = match.player2_id ?? null;
     }
     const finalScores = { player1: p1Score, player2: p2Score };
-    await finalizeMatch(matchId, finalScores, winnerId);
 
+    // Update local state FIRST so the results screen has correct data
+    // even if the DB write fails or the realtime channel is already closed
     set({
       matchStatus: 'finished',
+      match: {
+        ...match,
+        status: 'finished',
+        winner_id: winnerId,
+        scores: finalScores,
+      },
+      scores,
     });
+
+    // Sync to DB in background — don't block navigation
+    try {
+      await finalizeMatch(matchId, finalScores, winnerId);
+    } catch (err) {
+      console.error('Failed to finalize match in DB:', err);
+    }
   },
 
   cancelMatchmaking: async () => {
