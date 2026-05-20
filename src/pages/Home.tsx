@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { memo, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { useShallow } from 'zustand/react/shallow';
 import type { Grade } from '../utils/grading';
 
 const RANKS = [
