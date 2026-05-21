@@ -259,7 +259,6 @@ export default memo(function MultiplayerGame() {
                         padding: '0.5rem 0.75rem',
                         transition: 'border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
                         caretColor: 'var(--color-primary)',
-                        animation: flashKey > 0 ? 'flashSuccess 0.4s ease-out' : (shakeKey > 0 ? 'headShake 0.4s ease-in-out' : 'none'),
                       }}
                       onFocus={(e) => {
                         e.target.style.boxShadow = '0 0 0 2px var(--color-primary)';
@@ -363,7 +362,6 @@ export default memo(function MultiplayerGame() {
                         padding: '0.375rem 0.625rem',
                         transition: 'border-color 0.2s ease, color 0.2s ease',
                         caretColor: 'var(--color-primary)',
-                        animation: flashKey > 0 ? 'flashSuccess 0.4s ease-out' : (shakeKey > 0 ? 'headShake 0.4s ease-in-out' : 'none'),
                       }}
                     />
                   ) : (

@@ -26,7 +26,7 @@ export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore:
   }, []);
 
   const displayData = useMemo(() => {
-    if (isLoading) return { displayPlayers: [], userRankStr: '-' };
+    if (isLoading) return { displayPlayers: [], userRankStr: '-', actualRank: -1 };
 
     const players = [...leaderboard];
     let userRank = -1;
