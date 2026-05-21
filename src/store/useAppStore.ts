@@ -144,12 +144,13 @@ function computeBadgeUpdates(badges: Badge[], history: HistoryEntry[]): Badge[] 
   let totalCorrect = 0;
   let bestStreak = 0;
   let bestGrade: Grade | null = null;
-  const order = ['D', 'C', 'B', 'A', 'S'];
+  const gradeOrder = ['D', 'C', 'B', 'A', 'S'] as const;
+  const gradeRank = new Map(gradeOrder.map((g, i) => [g, i]));
 
   for (const entry of history) {
     totalCorrect += entry.result.totalCorrect;
     if (entry.result.bestStreak > bestStreak) bestStreak = entry.result.bestStreak;
-    if (!bestGrade || order.indexOf(entry.grade) > order.indexOf(bestGrade)) bestGrade = entry.grade;
+    if (!bestGrade || (gradeRank.get(entry.grade) ?? 0) > (gradeRank.get(bestGrade) ?? 0)) bestGrade = entry.grade;
   }
 
   return badges.map(badge => {

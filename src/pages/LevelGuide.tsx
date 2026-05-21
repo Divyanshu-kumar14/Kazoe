@@ -35,7 +35,7 @@ export default memo(function LevelGuide() {
             style={{
               fontFamily: 'var(--font-display)',
               fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
-              fontWeight: 700,
+              fontWeight: 600,
               color: 'var(--color-on-surface)',
               margin: 0,
             }}
@@ -156,7 +156,7 @@ export default memo(function LevelGuide() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="card p-6 flex items-start gap-4">
             <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+              className="size-10 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: 'var(--color-surface-container)' }}
             >
               <span
@@ -171,7 +171,7 @@ export default memo(function LevelGuide() {
                 style={{
                   fontFamily: 'var(--font-display)',
                   fontSize: '1.125rem',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   color: 'var(--color-on-surface)',
                   margin: 0,
                 }}
@@ -189,7 +189,7 @@ export default memo(function LevelGuide() {
 
           <div className="card p-6 flex items-start gap-4">
             <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+              className="size-10 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: 'var(--color-surface-container)' }}
             >
               <span
@@ -204,7 +204,7 @@ export default memo(function LevelGuide() {
                 style={{
                   fontFamily: 'var(--font-display)',
                   fontSize: '1.125rem',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   color: 'var(--color-on-surface)',
                   margin: 0,
                 }}
@@ -215,7 +215,7 @@ export default memo(function LevelGuide() {
                 className="mt-1 text-sm"
                 style={{ color: 'var(--color-on-surface-variant)', margin: 0 }}
               >
-                Just like a real abacus — the running total never goes below zero during any step of the calculation.
+                Just like a real abacus, the running total never goes below zero during any step of the calculation.
               </p>
             </div>
           </div>

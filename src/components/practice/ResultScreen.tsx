@@ -130,7 +130,7 @@ export function ResultScreen() {
             style={{
               fontFamily: 'var(--font-display)',
               fontSize: '1.75rem',
-              fontWeight: 700,
+              fontWeight: 600,
               color: 'var(--color-on-surface)',
               margin: 0,
             }}
@@ -234,7 +234,7 @@ export function ResultScreen() {
                   >
                     <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
                       <span
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                        className="size-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
                         style={{
                           fontFamily: 'var(--font-mono)',
                           backgroundColor:
