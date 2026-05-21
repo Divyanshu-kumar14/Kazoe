@@ -23,13 +23,6 @@ export function useMultiplayerGame() {
   const timeRemaining = store((s) => s.timeRemaining);
   const forfeitTimer = store((s) => s.forfeitTimer);
 
-  const startGame = store((s) => s.startGame);
-  const submitAnswer = store((s) => s.submitAnswer);
-  const receiveOpponentAnswer = store((s) => s.receiveOpponentAnswer);
-  const endGame = store((s) => s.endGame);
-  const setForfeitTimer = store((s) => s.setForfeitTimer);
-  const setMatch = store((s) => s.setMatch);
-
   const myAnswers = store((s) => s.myAnswers);
   const opponentAnswers = store((s) => s.opponentAnswers);
   const scores = store((s) => s.scores);
@@ -37,7 +30,9 @@ export function useMultiplayerGame() {
 
   const forfeitCount = useRef(FORFEIT_GRACE_SECONDS);
   const matchStatusRef = useRef(matchStatus);
-  matchStatusRef.current = matchStatus;
+  useEffect(() => {
+    matchStatusRef.current = matchStatus;
+  }, [matchStatus]);
 
   useEffect(() => {
     if (!matchId || !userId) return;
@@ -57,17 +52,18 @@ export function useMultiplayerGame() {
         if (currentStatus === 'playing') {
           if (userIds.length < 2) {
             if (!forfeitIntervalRef.current) {
+              const state = useMultiplayerStore.getState();
               forfeitCount.current = FORFEIT_GRACE_SECONDS;
-              setForfeitTimer(forfeitCount.current);
+              state.setForfeitTimer(forfeitCount.current);
               forfeitIntervalRef.current = setInterval(() => {
                 forfeitCount.current -= 1;
-                setForfeitTimer(forfeitCount.current);
+                useMultiplayerStore.getState().setForfeitTimer(forfeitCount.current);
                 if (forfeitCount.current <= 0) {
                   if (forfeitIntervalRef.current) {
                     clearInterval(forfeitIntervalRef.current);
                     forfeitIntervalRef.current = null;
                   }
-                  endGame();
+                  useMultiplayerStore.getState().endGame();
                 }
               }, 1000);
             }
@@ -75,7 +71,7 @@ export function useMultiplayerGame() {
             if (forfeitIntervalRef.current) {
               clearInterval(forfeitIntervalRef.current);
               forfeitIntervalRef.current = null;
-              setForfeitTimer(null);
+              useMultiplayerStore.getState().setForfeitTimer(null);
             }
           }
         }
@@ -83,7 +79,7 @@ export function useMultiplayerGame() {
       .on('broadcast', { event: 'answer_submitted' }, ({ payload }) => {
         const data = payload as AnswerPayload;
         if (data.playerId !== userId) {
-          receiveOpponentAnswer(data);
+          useMultiplayerStore.getState().receiveOpponentAnswer(data);
         }
       })
       .subscribe(async (status) => {
@@ -105,7 +101,7 @@ export function useMultiplayerGame() {
         filter: `id=eq.${matchId}`,
       }, (payload) => {
         const updatedMatch = payload.new as unknown as Match;
-        setMatch(updatedMatch);
+        useMultiplayerStore.getState().setMatch(updatedMatch);
       })
       .subscribe();
 
@@ -125,12 +121,12 @@ export function useMultiplayerGame() {
       channel.unsubscribe();
       channelRef.current = null;
     };
-  }, [matchId, userId]);
+  }, [matchId, userId, playerNumber]);
 
   useEffect(() => {
     if (matchStatus === 'countdown') {
       countdownTimeoutRef.current = setTimeout(() => {
-        startGame();
+        useMultiplayerStore.getState().startGame();
       }, COUNTDOWN_SECONDS * 1000);
     }
     return () => {
@@ -165,7 +161,7 @@ export function useMultiplayerGame() {
           timerIntervalRef.current = null;
         }
         graceTimeoutRef.current = setTimeout(() => {
-          endGame();
+          useMultiplayerStore.getState().endGame();
         }, 2000);
       }
     }, 250);
@@ -186,14 +182,14 @@ export function useMultiplayerGame() {
     const state = useMultiplayerStore.getState();
     if (state.matchStatus !== 'playing') return;
 
-    const payload = submitAnswer(answer);
+    const payload = useMultiplayerStore.getState().submitAnswer(answer);
     if (!payload) return;
 
     const channel = channelRef.current;
     if (channel) {
       channel.send({ type: 'broadcast', event: 'answer_submitted', payload });
     }
-  }, [submitAnswer]);
+  }, []);
 
   return {
     sendAnswer,

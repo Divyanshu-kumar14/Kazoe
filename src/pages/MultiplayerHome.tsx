@@ -324,8 +324,8 @@ export default memo(function MultiplayerHome() {
                 ) : (
                   <>
                     <div className="flex flex-col items-end gap-2">
-                      {sampleOperands.map((op, i) => (
-                        <div key={`preview-${sampleOperands.map(o => `${o.sign}${o.value}`).join('|')}-row${i}`} className="flex items-baseline gap-4">
+                      {sampleOperands.map((op, pos) => (
+                        <div key={`preview-${op.value}-${pos}`} className="flex items-baseline gap-4">
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', color: 'var(--color-on-surface-variant)', width: '1.5rem', textAlign: 'right' }}>{op.sign}</span>
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2.5rem', fontWeight: 500, color: 'var(--color-on-surface)', letterSpacing: '0.05em' }}>{op.value}</span>
                         </div>

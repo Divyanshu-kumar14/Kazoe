@@ -1,8 +1,16 @@
-import { Link } from 'react-router-dom';
-import { memo, useMemo } from 'react';
+
+import { useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import type { Grade } from '../utils/grading';
-
+import { AccuracySparkline } from '../components/home/AccuracySparkline';
+import { BadgeGrid } from '../components/home/BadgeGrid';
+import { Leaderboard } from '../components/home/Leaderboard';
+import { WelcomeHeader } from '../components/home/WelcomeHeader';
+import { StatsOverview } from '../components/home/StatsOverview';
+import { LevelBadge } from '../components/home/LevelBadge';
+import { MultiplayerDashboard } from '../components/home/MultiplayerDashboard';
+import { RecentSessions } from '../components/home/RecentSessions';
+import { QuickLinks } from '../components/home/QuickLinks';
 const RANKS = [
   { name: 'Beginner',     minPts: 0,    icon: 'kid_star',     color: '#78909c' },
   { name: 'Novice',       minPts: 100,  icon: 'star_half',    color: '#26a69a' },
@@ -29,110 +37,11 @@ function getNextRank(points: number) {
 
 const DAILY_GOAL = 5; // sessions per day
 
-const AccuracySparkline = memo(function AccuracySparkline({ history }: { history: { result: { accuracyPercent: number } }[] }) {
-  const recent = history;
-  if (recent.length < 2) return null;
 
-  const W = 300;
-  const H = 60;
-  const pad = 4;
-  const chartW = W - pad * 2;
-  const chartH = H - pad * 2;
-
-  const points = recent.map((h, i) => {
-    const x = pad + (i / (recent.length - 1)) * chartW;
-    const y = pad + chartH - (h.result.accuracyPercent / 100) * chartH;
-    return { x, y, accuracy: h.result.accuracyPercent };
-  });
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary)' }}>
-          trending_up
-        </span>
-        <span className="label-caps">Accuracy Trend</span>
-      </div>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
-        <polyline
-          fill="none"
-          stroke="var(--color-primary)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          points={points.map(p => `${p.x},${p.y}`).join(' ')}
-        />
-        {points.map((p, i) => (
-          <circle
-            key={i}
-            cx={p.x}
-            cy={p.y}
-            r="3"
-            fill="var(--color-primary)"
-            stroke="var(--color-surface-lowest)"
-            strokeWidth="1.5"
-          >
-            <title>{p.accuracy}%</title>
-          </circle>
-        ))}
-      </svg>
-    </div>
-  );
-});
-
-const BadgeGrid = memo(function BadgeGrid({ badges }: { badges: Array<{ id: string; name: string; description: string; icon: string; unlocked: boolean; unlockedAt: number | null }> }) {
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary)' }}>
-          emoji_events
-        </span>
-        <span className="label-caps">Achievements</span>
-      </div>
-      <div className="flex flex-wrap gap-3">
-        {badges.map((badge) => (
-          <div
-            key={badge.id}
-            title={`${badge.name}: ${badge.description}`}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.375rem',
-              padding: '0.375rem 0.625rem',
-              borderRadius: '0.5rem',
-              backgroundColor: badge.unlocked
-                ? 'var(--color-primary-container)'
-                : 'var(--color-surface-container)',
-              opacity: badge.unlocked ? 1 : 0.4,
-              transition: 'opacity 0.2s ease, background-color 0.2s ease',
-            }}
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{
-                fontSize: '16px',
-                color: badge.unlocked ? 'var(--color-on-primary-container)' : 'var(--color-outline)',
-              }}
-            >
-              {badge.icon}
-            </span>
-            <span
-              className="text-xs font-semibold"
-              style={{
-                color: badge.unlocked ? 'var(--color-on-surface)' : 'var(--color-outline)',
-              }}
-            >
-              {badge.name}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-});
 
 export default function Home() {
   const history = useAppStore((s) => s.history);
+  const multiplayerHistory = useAppStore((s) => s.multiplayerHistory);
   const level = useAppStore(s => s.practiceConfig.level);
   const badges = useAppStore((s) => s.badges);
 
@@ -171,6 +80,12 @@ export default function Home() {
         todayAttempted += entryAttempted;
       }
     }
+    
+    for (const match of multiplayerHistory) {
+      if (match.isWinner) totalPoints += 50;
+      else if (match.isDraw) totalPoints += 25;
+      else totalPoints += 10;
+    }
 
     const avgAccuracy = totalAttempted > 0 ? (totalCorrect / totalAttempted) * 100 : 0;
     const todayAccuracy = todayAttempted > 0 ? (todayCorrect / todayAttempted) * 100 : 0;
@@ -192,11 +107,42 @@ export default function Home() {
       todayAccuracy,
       last5,
     };
-  }, [history]);
+  }, [history, multiplayerHistory]);
+
+  const mpStats = useMemo(() => {
+    let wins = 0;
+    let draws = 0;
+    let losses = 0;
+    let totalAccuracy = 0;
+
+    for (const match of multiplayerHistory) {
+      if (match.isWinner) wins++;
+      else if (match.isDraw) draws++;
+      else losses++;
+
+      totalAccuracy += match.myAccuracy;
+    }
+
+    const totalMatches = multiplayerHistory.length;
+    const winRate = totalMatches > 0 ? (wins / totalMatches) * 100 : 0;
+    const avgAccuracy = totalMatches > 0 ? totalAccuracy / totalMatches : 0;
+    const last5 = multiplayerHistory.slice(-5).reverse();
+
+    return {
+      totalMatches,
+      wins,
+      losses,
+      draws,
+      winRate,
+      avgAccuracy,
+      last5,
+    };
+  }, [multiplayerHistory]);
 
   const sparklineData = useMemo(() => history.slice(-20), [history]);
   const badgeIds = useMemo(() => badges.map(b => ({ id: b.id, name: b.name, description: b.description, icon: b.icon, unlocked: b.unlocked, unlockedAt: b.unlockedAt })), [badges]);
   const hasHistory = stats.totalSessions > 0;
+  const hasMultiplayerHistory = mpStats.totalMatches > 0;
 
   const rank = getRank(stats.totalPoints);
   const nextRank = getNextRank(stats.totalPoints);
@@ -206,428 +152,56 @@ export default function Home() {
   return (
     <div className="flex-1 animate-fade-in-up">
       <div className="max-w-[1200px] mx-auto px-6 py-10 flex flex-col gap-8">
-
-        <div
-          className="card p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left"
-        >
-          <div className="flex flex-col items-center md:items-start gap-3 max-w-lg">
-            <h1
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
-                fontWeight: 600,
-                color: 'var(--color-on-surface)',
-                lineHeight: 1.15,
-              }}
-            >
-              {hasHistory
-                ? `Welcome back! ${stats.todaySessions >= DAILY_GOAL ? '🎯 Goal reached!' : 'Keep the streak alive.'}`
-                : 'Ready to master the beads?'}
-            </h1>
-            <p
-              className="text-lg"
-              style={{ color: 'var(--color-on-surface-variant)', lineHeight: 1.6 }}
-            >
-              {hasHistory
-                ? `You've completed ${stats.totalSessions} session${stats.totalSessions !== 1 ? 's' : ''} with ${Math.round(stats.avgAccuracy)}% average accuracy.`
-                : 'Start your first practice session and track your journey to Grandmaster.'}
-            </p>
-            <Link to="/practice" className="btn-primary mt-2 w-fit">
-              {hasHistory ? 'Continue Practice' : 'Start Practice'}
-              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
-            </Link>
-          </div>
-
-          {/* Daily Goal Ring */}
-          <div className="flex-shrink-0 relative w-[120px] h-[120px]">
-            <svg viewBox="0 0 120 120" className="w-full h-full" style={{ transform: 'rotate(-90deg)' }}>
-              <circle
-                cx="60" cy="60" r="52"
-                fill="none"
-                stroke="var(--color-surface-container-high)"
-                strokeWidth="8"
-              />
-              <circle
-                cx="60" cy="60" r="52"
-                fill="none"
-                stroke="var(--color-primary)"
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={`${goalProgress * 326.73} 326.73`}
-                style={{ transition: 'stroke-dasharray 0.6s ease' }}
-              />
-            </svg>
-            <div
-              className="absolute inset-0 flex flex-col items-center justify-center"
-            >
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '1.75rem',
-                  fontWeight: 500,
-                  color: 'var(--color-on-surface)',
-                  letterSpacing: '0.05em',
-                }}
-              >
-                {goalPercent}%
-              </span>
-              <span className="label-caps" style={{ fontSize: '0.75rem' }}>
-                {stats.todaySessions}/{DAILY_GOAL} today
-              </span>
-            </div>
-          </div>
-        </div>
+        <WelcomeHeader
+          hasHistory={hasHistory}
+          todaySessions={stats.todaySessions}
+          avgAccuracy={stats.avgAccuracy}
+          totalSessions={stats.totalSessions}
+          goalProgress={goalProgress}
+          goalPercent={goalPercent}
+          DAILY_GOAL={DAILY_GOAL}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatsOverview hasHistory={hasHistory} stats={stats as React.ComponentProps<typeof StatsOverview>['stats']} />
+          <LevelBadge level={level} totalPoints={stats.totalPoints} rank={rank} nextRank={nextRank} />
+        </div>
 
-          <div className="card p-6 md:col-span-2 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: '24px', color: 'var(--color-primary)' }}
-                >
-                  insights
-                </span>
-                <h2
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '1.5rem',
-                    fontWeight: 600,
-                    color: 'var(--color-on-surface)',
-                    margin: 0,
-                  }}
-                >
-                  Your Stats
-                </h2>
-              </div>
-              {hasHistory && (
-                <span
-                  className="px-3 py-1 rounded-full text-xs font-bold"
-                  style={{
-                    backgroundColor: 'var(--color-primary)',
-                    color: 'var(--color-on-primary)',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  Best: {stats.bestGrade}
-                </span>
-              )}
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            <MultiplayerDashboard
+              hasMultiplayerHistory={hasMultiplayerHistory}
+              mpStats={mpStats}
+              formatTimeAgo={formatTimeAgo}
+            />
 
-            {hasHistory ? (
-              <>
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <StatBlock
-                    icon="check_circle"
-                    label="Accuracy"
-                    value={`${Math.round(stats.avgAccuracy)}%`}
-                  />
-                  <StatBlock
-                    icon="local_fire_department"
-                    label="Best Streak"
-                    value={`${stats.bestStreak}`}
-                  />
-                  <StatBlock
-                    icon="history"
-                    label="Sessions"
-                    value={`${stats.totalSessions}`}
-                  />
-                  <StatBlock
-                    icon="schedule"
-                    label="Time Spent"
-                    value={`${stats.totalTimeMinutes}m`}
-                  />
-                </div>
-
-                {/* Today's progress */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between text-sm">
-                    <span style={{ color: 'var(--color-on-surface-variant)' }}>Today's accuracy</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-on-surface-variant)' }}>
-                      {stats.todayCorrect} / {stats.todayAttempted} correct
-                    </span>
-                  </div>
-                  <div
-                    className="w-full h-2 rounded-full overflow-hidden"
-                    style={{ backgroundColor: 'var(--color-surface-container-high)' }}
-                  >
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${stats.todayAccuracy}%`,
-                        backgroundColor: stats.todayAccuracy >= 80 ? 'var(--color-primary)' : 'var(--color-secondary)',
-                      }}
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div
-                className="flex flex-col items-center justify-center py-8 gap-3"
-                style={{ color: 'var(--color-on-surface-variant)' }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '48px', opacity: 0.4 }}>
-                  query_stats
-                </span>
-                <p className="text-sm text-center" style={{ maxWidth: '280px', margin: 0 }}>
-                  Complete your first practice session to see your performance stats here.
-                </p>
+            {hasHistory && (
+              <div className="card p-6 flex flex-col gap-6">
+                <AccuracySparkline history={sparklineData} />
+                <div className="border-t" style={{ borderColor: 'var(--color-outline-variant)', margin: 0 }} />
+                <BadgeGrid badges={badgeIds} />
               </div>
             )}
 
-            <Link
-              to="/practice"
-              className="btn-secondary w-full justify-center mt-2"
-              style={{ fontWeight: 700 }}
-            >
-              {hasHistory ? 'Practice More' : 'Begin First Session'}
-            </Link>
+            <RecentSessions
+              last5={stats.last5}
+              formatTimeAgo={formatTimeAgo}
+              gradeColor={gradeColor}
+            />
           </div>
 
-          {/* Level Badge */}
-          <div
-            className="card p-6 flex flex-col items-center justify-center gap-2 text-center"
-            style={{
-              backgroundColor: 'var(--color-primary)',
-              borderColor: 'var(--color-primary)',
-              color: 'var(--color-on-primary)',
-            }}
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: '36px', color: 'var(--color-secondary-container)', fontVariationSettings: "'FILL' 1" }}
-            >
-              {rank.icon}
-            </span>
-            <span
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.75rem',
-                fontWeight: 700,
-              }}
-            >
-              Level {level}
-            </span>
-            <span className="text-sm opacity-80">{rank.name}</span>
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '2rem',
-                fontWeight: 500,
-                letterSpacing: '0.05em',
-                marginTop: '0.25rem',
-              }}
-            >
-              {stats.totalPoints.toLocaleString()}
-            </span>
-            <span className="text-xs opacity-80">
-              {nextRank
-                ? `${nextRank.minPts - stats.totalPoints} pts to ${nextRank.name}`
-                : 'Max Rank Achieved!'}
-            </span>
+          <div className="lg:col-span-1 flex flex-col gap-6">
+            <Leaderboard userScore={stats.totalPoints} />
           </div>
         </div>
 
-        {hasHistory && (
-          <div className="card p-6 flex flex-col gap-6">
-            <AccuracySparkline history={sparklineData} />
-            <div className="border-t" style={{ borderColor: 'var(--color-outline-variant)', margin: 0 }} />
-            <BadgeGrid badges={badgeIds} />
-          </div>
-        )}
-
-        {stats.last5.length > 0 && (
-          <div className="card p-6 flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: '24px', color: 'var(--color-primary)' }}
-              >
-                history
-              </span>
-              <h2
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.25rem',
-                  fontWeight: 600,
-                  color: 'var(--color-on-surface)',
-                  margin: 0,
-                }}
-              >
-                Recent Sessions
-              </h2>
-            </div>
-            <div className="flex flex-col gap-2">
-              {stats.last5.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="flex items-center justify-between px-4 py-3 rounded-xl"
-                  style={{
-                    backgroundColor: 'var(--color-surface-container)',
-                    transition: 'background-color 0.2s',
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="size-9 rounded-lg flex items-center justify-center text-sm font-bold"
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        backgroundColor: gradeColor(entry.grade),
-                        color: '#fff',
-                      }}
-                    >
-                      {entry.grade}
-                    </span>
-                    <div className="flex flex-col">
-                      <span
-                        className="text-sm font-semibold"
-                        style={{ color: 'var(--color-on-surface)' }}
-                      >
-                        Level {entry.level}: {entry.result.totalCorrect}/{entry.result.totalAttempted}
-                      </span>
-                      <span className="text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>
-                        {formatTimeAgo(entry.timestamp)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span
-                      className="text-sm"
-                      style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-on-surface-variant)' }}
-                    >
-                      {Math.round(entry.result.accuracyPercent)}%
-                    </span>
-                    <span
-                      className="text-sm"
-                      style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-on-surface-variant)' }}
-                    >
-                      {entry.result.timeUsedSeconds}s
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          <Link
-            to="/sheets"
-            className="card card-interactive p-6 flex flex-col gap-3 no-underline"
-            style={{ color: 'inherit' }}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className="size-10 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: 'var(--color-surface-container)' }}
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: '22px', color: 'var(--color-primary)' }}
-                >
-                  description
-                </span>
-              </div>
-              <h3
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.25rem',
-                  fontWeight: 600,
-                  color: 'var(--color-on-surface)',
-                  margin: 0,
-                }}
-              >
-                Sheet Generator
-              </h3>
-            </div>
-            <p className="text-sm" style={{ color: 'var(--color-on-surface-variant)', margin: 0 }}>
-              Create custom practice sheets tailored to your current level. Print or practice online.
-            </p>
-            <span
-              className="mt-auto flex items-center gap-1 text-sm font-bold"
-              style={{ color: 'var(--color-primary)' }}
-            >
-              Generate
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
-            </span>
-          </Link>
-
-          <Link
-            to="/levels"
-            className="card card-interactive p-6 flex flex-col gap-3 no-underline"
-            style={{ color: 'inherit' }}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className="size-10 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: 'var(--color-surface-container)' }}
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: '22px', color: 'var(--color-primary)' }}
-                >
-                  school
-                </span>
-              </div>
-              <h3
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.25rem',
-                  fontWeight: 600,
-                  color: 'var(--color-on-surface)',
-                  margin: 0,
-                }}
-              >
-                Level Guide
-              </h3>
-            </div>
-            <p className="text-sm" style={{ color: 'var(--color-on-surface-variant)', margin: 0 }}>
-              Review the curriculum, see what's next, and track your overall mastery progress.
-            </p>
-            <span
-              className="mt-auto flex items-center gap-1 text-sm font-bold"
-              style={{ color: 'var(--color-primary)' }}
-            >
-              View Path
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
-            </span>
-          </Link>
-        </div>
-
+        <QuickLinks />
       </div>
     </div>
   );
 }
 
-const StatBlock = memo(function StatBlock({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return (
-    <div
-      className="flex flex-col items-center gap-1 p-3 rounded-xl"
-      style={{ backgroundColor: 'var(--color-surface-container)' }}
-    >
-      <span
-        className="material-symbols-outlined"
-        style={{ fontSize: '20px', color: 'var(--color-primary)' }}
-      >
-        {icon}
-      </span>
-      <span
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: '1.25rem',
-          fontWeight: 600,
-          color: 'var(--color-on-surface)',
-        }}
-      >
-        {value}
-      </span>
-      <span className="label-caps" style={{ fontSize: '0.75rem' }}>{label}</span>
-    </div>
-  );
-});
+
 
 function gradeColor(grade: Grade) {
   switch (grade) {
