@@ -107,19 +107,19 @@ export async function subscribeToMatchUpdate(
   return channel;
 }
 
-export async function finalizeMatch(
-  matchId: string,
-  scores: { player1: number; player2: number },
-  winnerId: string | null
-) {
-  await requireSupabase()
-    .from('matches')
-    .update({
-      status: 'finished',
-      scores,
-      winner_id: winnerId,
-    })
-    .eq('id', matchId);
+export interface FinalizeResult {
+  winner_id: string | null;
+  decided_by: 'correct_count' | 'accuracy' | 'efficiency' | 'speed' | 'draw';
+  already_finished: boolean;
+}
+
+export async function finalizeMatch(matchId: string): Promise<FinalizeResult> {
+  const { data, error } = await requireSupabase().rpc('finalize_match', {
+    match_id: matchId,
+  });
+
+  if (error) throw error;
+  return data as FinalizeResult;
 }
 
 export async function cleanupMatch(matchId: string) {

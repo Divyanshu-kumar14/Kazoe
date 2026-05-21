@@ -45,13 +45,19 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(userId !== null);
 
   useEffect(() => {
-    if (!userId) {
-      initAuth()
-        .then(() => setReady(true))
-        .catch(() => setReady(true));
-    } else {
-      setReady(true);
-    }
+    let mounted = true;
+    const init = async () => {
+      if (!userId) {
+        try {
+          await initAuth();
+        } catch {
+          // Ignore auth init errors
+        }
+      }
+      if (mounted) setReady(true);
+    };
+    init();
+    return () => { mounted = false; };
   }, [userId, initAuth]);
 
   if (!ready) return null;

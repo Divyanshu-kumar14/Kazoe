@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo } from 'react';
+import { useState, useEffect, useRef, memo, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMultiplayerStore } from '../store/useMultiplayerStore';
 import { useMultiplayerGame } from '../hooks/useMultiplayerGame';
@@ -8,7 +8,16 @@ export default memo(function MultiplayerGame() {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [countdownValue, setCountdownValue] = useState(3);
+  
+  const [countdownValue, dispatchCountdown] = useReducer(
+    (state: number, action: 'tick' | 'reset') => {
+      if (action === 'reset') return 3;
+      if (action === 'tick') return Math.max(0, state - 1);
+      return state;
+    },
+    3
+  );
+
 
   const { match, playerNumber, currentQuestionIndex } = useMultiplayerStore();
   const {
@@ -32,27 +41,33 @@ export default memo(function MultiplayerGame() {
 
   useEffect(() => {
     if (matchStatus === 'countdown') {
-      setCountdownValue(3);
-      countdownRef.current = setInterval(() => {
-        setCountdownValue((prev) => {
-          if (prev <= 1) {
-            if (countdownRef.current) clearInterval(countdownRef.current);
-            return 0;
-          }
-          return prev - 1;
-        });
+      dispatchCountdown('reset');
+      
+      const timer = setInterval(() => {
+        dispatchCountdown('tick');
       }, 1000);
+      
+      countdownRef.current = timer;
+
       return () => {
-        if (countdownRef.current) clearInterval(countdownRef.current);
+        clearInterval(timer);
       };
     }
   }, [matchStatus]);
+
+  useEffect(() => {
+    if (countdownValue === 0 && countdownRef.current) {
+      clearInterval(countdownRef.current);
+    }
+  }, [countdownValue]);
 
   useEffect(() => {
     if (matchStatus === 'playing') {
       inputRef.current?.focus();
     }
   }, [matchStatus, currentQuestionIndex]);
+
+
 
   const handleSubmit = () => {
     if (!match || matchStatus !== 'playing' || inputValue === '') return;
@@ -240,11 +255,11 @@ export default memo(function MultiplayerGame() {
                         border: 'none',
                         borderBottom: `3px solid ${inputValue ? 'var(--color-primary)' : 'var(--color-outline-variant)'}`,
                         borderRadius: '0.5rem 0.5rem 0 0',
-                        outline: 'none',
                         textAlign: 'center',
                         padding: '0.5rem 0.75rem',
                         transition: 'border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
                         caretColor: 'var(--color-primary)',
+                        animation: flashKey > 0 ? 'flashSuccess 0.4s ease-out' : (shakeKey > 0 ? 'headShake 0.4s ease-in-out' : 'none'),
                       }}
                       onFocus={(e) => {
                         e.target.style.boxShadow = '0 0 0 2px var(--color-primary)';
@@ -344,11 +359,11 @@ export default memo(function MultiplayerGame() {
                         border: 'none',
                         borderBottom: `2px solid ${inputValue ? 'var(--color-primary)' : 'var(--color-outline-variant)'}`,
                         borderRadius: '0.375rem 0.375rem 0 0',
-                        outline: 'none',
                         textAlign: 'right',
                         padding: '0.375rem 0.625rem',
                         transition: 'border-color 0.2s ease, color 0.2s ease',
                         caretColor: 'var(--color-primary)',
+                        animation: flashKey > 0 ? 'flashSuccess 0.4s ease-out' : (shakeKey > 0 ? 'headShake 0.4s ease-in-out' : 'none'),
                       }}
                     />
                   ) : (
@@ -385,7 +400,7 @@ export default memo(function MultiplayerGame() {
                   background: 'var(--color-surface-container)',
                 }}
               >
-                Skip
+                Skip question
               </button>
               <button
                 onClick={handleSubmit}
@@ -405,7 +420,7 @@ export default memo(function MultiplayerGame() {
                   boxShadow: inputValue !== '' ? '0 2px 8px rgba(0,89,92,0.2)' : 'none',
                 }}
               >
-                Submit
+                Submit answer
               </button>
             </div>
           )}

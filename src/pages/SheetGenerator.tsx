@@ -145,7 +145,7 @@ export default memo(function SheetGenerator() {
               onChange={(e) => setLevel(Number(e.target.value))}
             >
               {levels.map((l) => (
-                <option key={l} value={l}>Level {l}</option>
+                <option key={`lvl-${l}`} value={l}>Level {l}</option>
               ))}
             </select>
           </div>
@@ -159,7 +159,7 @@ export default memo(function SheetGenerator() {
               onChange={(e) => setQuestionCount(Number(e.target.value))}
             >
               {[10, 20, 30, 40, 50].map((n) => (
-                <option key={n} value={n}>{n}</option>
+                <option key={`n-${n}`} value={n}>{n}</option>
               ))}
             </select>
           </div>
@@ -175,7 +175,7 @@ export default memo(function SheetGenerator() {
                   onChange={(e) => setColumns(Number(e.target.value))}
                 >
                   {[2, 3, 4, 5].map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={`c-${c}`} value={c}>{c}</option>
                   ))}
                 </select>
               </div>
@@ -193,7 +193,7 @@ export default memo(function SheetGenerator() {
                 >
                   <option value="">Default ({levelConfig.rowCount})</option>
                   {Array.from({ length: 9 }, (_, i) => i + 2).map((r) => (
-                    <option key={r} value={r}>{r}</option>
+                    <option key={`r-${r}`} value={r}>{r}</option>
                   ))}
                 </select>
               </div>
@@ -327,8 +327,10 @@ export default memo(function SheetGenerator() {
 
                     {/* Operands */}
                     <div className="flex flex-col items-end gap-0.5">
-                      {q.operands.map((op, i) => (
-                        <div key={i} className="flex items-baseline gap-2">
+                      {q.operands.map((op, opIdx) => {
+                        const rowKey = q.operands.slice(0, opIdx + 1).join('-');
+                        return (
+                        <div key={`sheet-op-${rowKey}`} className="flex items-baseline gap-2">
                           <span
                             style={{
                               fontFamily: 'var(--font-mono)',
@@ -338,7 +340,7 @@ export default memo(function SheetGenerator() {
                               textAlign: 'right',
                             }}
                           >
-                            {i === 0 ? '' : op < 0 ? '−' : '+'}
+                            {opIdx === 0 ? '' : op < 0 ? '−' : '+'}
                           </span>
                           <span
                             style={{
@@ -352,7 +354,8 @@ export default memo(function SheetGenerator() {
                             {Math.abs(op)}
                           </span>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {/* Divider */}
@@ -417,9 +420,11 @@ export default memo(function SheetGenerator() {
                       backgroundColor: 'var(--color-surface-container)',
                     }}
                   >
-                    {Array.from({ length: 5 }).map((_, i) => (
+                    {Array.from({ length: 5 }).map((_, i) => {
+                      const colKey = `header-col-${i}`;
+                      return (
                       <div
-                        key={i}
+                        key={colKey}
                         style={{
                           display: 'grid',
                           gridTemplateColumns: '2.5rem 1fr',
@@ -449,14 +454,17 @@ export default memo(function SheetGenerator() {
                           Ans
                         </span>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Table rows — chunk into groups of 5 for table layout */}
                   <div>
-                    {Array.from({ length: Math.ceil(questions.length / 5) }).map((_, rowIdx) => (
+                    {Array.from({ length: Math.ceil(questions.length / 5) }).map((_, rowIdx) => {
+                      const rowKey = `ans-row-${rowIdx}`;
+                      return (
                       <div
-                        key={rowIdx}
+                        key={rowKey}
                         style={{
                           display: 'grid',
                           gridTemplateColumns: 'repeat(5, 1fr)',
@@ -513,7 +521,8 @@ export default memo(function SheetGenerator() {
                           );
                         })}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -522,7 +531,7 @@ export default memo(function SheetGenerator() {
 
             <div className="sheet-print-pages">
               {pages.map((pageQuestions, pageIdx) => (
-                <div key={pageIdx} className="sheet-page">
+                <div key={`page-${pageIdx}`} className="sheet-page">
                   <div className="sheet-page-header">
                     <div className="sheet-page-title">
                       {isMultDiv
@@ -552,7 +561,7 @@ export default memo(function SheetGenerator() {
                         const globalIdx = pageIdx * (isMultDiv ? 10 : 4) + qIdx;
                         return (
                           <div
-                            key={qIdx}
+                            key={`q-${globalIdx}`}
                             style={{
                               display: 'flex',
                               alignItems: 'center',
@@ -640,11 +649,13 @@ export default memo(function SheetGenerator() {
                       {pageQuestions.map((q, qIdx) => {
                         const globalIdx = pageIdx * PER_PAGE + qIdx;
                         return (
-                          <div key={qIdx} className="sheet-question-cell">
+                          <div key={`q-${globalIdx}`} className="sheet-question-cell">
                             <div className="sheet-q-number">Q{globalIdx + 1}</div>
                             <div className="sheet-operands">
-                              {q.operands.map((op, i) => (
-                                <div key={i} className="sheet-operand-row">
+                              {q.operands.map((op, i) => {
+                                const opKey = `op-${globalIdx}-${i}-${op}`;
+                                return (
+                                <div key={opKey} className="sheet-operand-row">
                                   <span className="sheet-op-sign">
                                     {i === 0 ? '' : op < 0 ? '−' : '+'}
                                   </span>
@@ -652,7 +663,8 @@ export default memo(function SheetGenerator() {
                                     {Math.abs(op)}
                                   </span>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                             <div className="sheet-divider" />
                             <div className="sheet-answer-blank" />
@@ -685,7 +697,7 @@ export default memo(function SheetGenerator() {
 
                   <div className="sheet-answer-key-grid">
                     {pageAnswers.map(({ idx, answer }) => (
-                      <div key={idx} className="sheet-answer-entry">
+                      <div key={`ans-${idx}`} className="sheet-answer-entry">
                         <span className="sheet-answer-label">Q{idx + 1}</span>
                         <span className="sheet-answer-value">{answer}</span>
                       </div>

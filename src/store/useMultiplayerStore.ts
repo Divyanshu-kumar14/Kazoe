@@ -11,6 +11,7 @@ import {
   finalizeMatch,
   cleanupMatch,
 } from '../lib/multiplayer';
+import { getProfile } from '../lib/profile';
 import { generateQuestions, generateSeed } from '../utils/questionGenerator';
 import { SOROBAN_LEVELS } from '../utils/levelConfig';
 
@@ -31,6 +32,7 @@ export type MatchStatusValue =
 
 export interface MultiplayerState {
   userId: string | null;
+  username: string | null;
   isAuthenticating: boolean;
   authError: string | null;
 
@@ -65,11 +67,13 @@ export interface MultiplayerState {
   endGame: () => Promise<void>;
   cancelMatchmaking: () => Promise<void>;
   setForfeitTimer: (value: number | null) => void;
+  setUsername: (username: string | null) => void;
   reset: () => void;
 }
 
 export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
   userId: null,
+  username: null,
   isAuthenticating: false,
   authError: null,
 
@@ -99,13 +103,22 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     set({ isAuthenticating: true, authError: null });
     try {
       const userId = await getUserId();
-      set({ userId, isAuthenticating: false });
+      const profile = await getProfile(userId);
+      set({ 
+        userId, 
+        username: profile?.username || null,
+        isAuthenticating: false 
+      });
       return userId;
     } catch (e) {
       const error = extractError(e, 'Auth failed');
       set({ authError: error, isAuthenticating: false });
       throw e;
     }
+  },
+
+  setUsername: (username: string | null) => {
+    set({ username });
   },
 
   setMultiplayerConfig: (partial: Partial<MatchConfig>) => {
@@ -259,21 +272,19 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     if (!state.matchId || !state.userId || !state.match) return;
     if (state.matchStatus === 'finished') return;
 
-    const { matchId, match, scores } = state;
+    const { matchId } = state;
 
-    const [p1Score, p2Score] = scores;
-    let winnerId: string | null = null;
-    if (p1Score > p2Score) {
-      winnerId = match.player1_id;
-    } else if (p2Score > p1Score) {
-      winnerId = match.player2_id ?? null;
+    // 1. Flush any pending answer progress to DB first
+    await flushPendingProgress();
+
+    // 2. Call server-side atomic finalize (determines winner with tiebreakers)
+    try {
+      await finalizeMatch(matchId);
+    } catch (err) {
+      console.error('Failed to finalize match:', err);
     }
-    const finalScores = { player1: p1Score, player2: p2Score };
-    await finalizeMatch(matchId, finalScores, winnerId);
 
-    set({
-      matchStatus: 'finished',
-    });
+    set({ matchStatus: 'finished' });
   },
 
   cancelMatchmaking: async () => {
@@ -442,3 +453,35 @@ function scheduleProgressUpdate(
 }
 
 export { MULTIPLAYER_QUESTION_POOL };
+
+/** Immediately flush any debounced progress update to DB. Called before finalize. */
+async function flushPendingProgress() {
+  if (progressTimeout) {
+    clearTimeout(progressTimeout);
+    progressTimeout = null;
+  }
+  if (!pendingProgress) return;
+
+  const p = pendingProgress;
+  pendingProgress = null;
+
+  try {
+    const submittedAnswers = p.allAnswers.filter(
+      (a): a is AnswerPayload => a !== null
+    );
+
+    const { error } = await requireSupabase().rpc('update_match_progress', {
+      match_id: p.matchId,
+      player_num: p.playerNumber,
+      player_score: p.playerScore,
+      answers: submittedAnswers,
+      player_done: true,
+    });
+
+    if (error) {
+      console.error('Error flushing match progress:', error);
+    }
+  } catch (err) {
+    console.error('Failed to flush match progress:', err);
+  }
+}

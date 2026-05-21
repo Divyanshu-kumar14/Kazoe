@@ -11,7 +11,10 @@ const Countdown = memo(function Countdown({ onDone }: CountdownProps) {
   const [count, setCount] = useState(3);
   const { playTick } = useSound();
   const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
+
 
   useEffect(() => {
     if (count === 0) {
@@ -32,7 +35,7 @@ const Countdown = memo(function Countdown({ onDone }: CountdownProps) {
         alignItems: 'center',
         justifyContent: 'center',
         background: 'var(--color-surface)',
-        zIndex: 100,
+        zIndex: 50,
       }}
     >
       <span
@@ -115,9 +118,11 @@ export function TestInterface() {
   const [timeLeft, setTimeLeft] = useState(timeLimitSeconds);
   const [inputVal, setInputVal] = useState('');
   const [shakeKey, setShakeKey] = useState(0);
+  const [flashKey, setFlashKey] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const inputValRef = useRef('');
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { playCorrect, playWrong } = useSound();
 
   useEffect(() => {
@@ -167,9 +172,16 @@ export function TestInterface() {
     shakeTimerRef.current = setTimeout(() => setShakeKey(0), 400);
   }, []);
 
+  const triggerFlash = useCallback(() => {
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    setFlashKey((k) => k + 1);
+    flashTimerRef.current = setTimeout(() => setFlashKey(0), 400);
+  }, []);
+
   useEffect(() => {
     return () => {
       if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     };
   }, []);
 
@@ -187,6 +199,7 @@ export function TestInterface() {
 
     if (isCorrect) {
       playCorrect();
+      triggerFlash();
     } else {
       playWrong();
       triggerShake();
@@ -195,7 +208,7 @@ export function TestInterface() {
     submitAnswer(answer);
     setInputVal('');
     inputValRef.current = '';
-  }, [submitAnswer, currentIndex, playCorrect, playWrong, triggerShake]);
+  }, [submitAnswer, currentIndex, playCorrect, playWrong, triggerShake, triggerFlash]);
 
   const handleSkip = useCallback(() => {
     submitAnswer('skipped');
@@ -397,7 +410,7 @@ export function TestInterface() {
               fontFamily: 'var(--font-mono)',
               fontSize: '0.75rem',
               fontWeight: 600,
-              letterSpacing: '0.08em',
+              letterSpacing: '0.05em',
               color: 'var(--color-on-surface-variant)',
               backgroundColor: 'var(--color-surface-container)',
               padding: '0.1875rem 0.625rem',
@@ -499,11 +512,12 @@ export function TestInterface() {
                   border: 'none',
                   borderBottom: `3px solid ${inputVal ? 'var(--color-primary)' : 'var(--color-outline-variant)'}`,
                   borderRadius: '0.5rem 0.5rem 0 0',
-                  outline: 'none',
+                  outline: '2px solid transparent',
                   textAlign: 'center',
                   padding: '0.5rem 0.75rem',
                   transition: 'border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
                   caretColor: 'var(--color-primary)',
+                  animation: flashKey > 0 ? 'flashSuccess 0.4s ease-out' : (shakeKey > 0 ? 'headShake 0.4s ease-in-out' : 'none'),
                 }}
                 onFocus={(e) => {
                   e.target.style.boxShadow = '0 0 0 2px var(--color-primary)';
@@ -618,11 +632,12 @@ export function TestInterface() {
                   border: 'none',
                   borderBottom: `2px solid ${inputVal ? 'var(--color-primary)' : 'var(--color-outline-variant)'}`,
                   borderRadius: '0.375rem 0.375rem 0 0',
-                  outline: 'none',
+                  outline: '2px solid transparent',
                   textAlign: 'right',
                   padding: '0.375rem 0.625rem',
                   transition: 'border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
                   caretColor: 'var(--color-primary)',
+                  animation: flashKey > 0 ? 'flashSuccess 0.4s ease-out' : (shakeKey > 0 ? 'headShake 0.4s ease-in-out' : 'none'),
                 }}
                 onFocus={(e) => {
                   e.target.style.boxShadow = '0 0 0 2px var(--color-primary)';
@@ -682,7 +697,7 @@ export function TestInterface() {
             boxShadow: canSubmit ? '0 2px 8px rgba(0,89,92,0.2)' : 'none',
           }}
         >
-          Submit
+          Submit Answer
         </button>
       </div>
 

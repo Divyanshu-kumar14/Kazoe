@@ -39,6 +39,35 @@ function saveHistory(history: HistoryEntry[]) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
 
+// --- Multiplayer History (persisted to localStorage) ---
+export interface MultiplayerHistoryEntry {
+  id: string;
+  timestamp: number;
+  isWinner: boolean;
+  isDraw: boolean;
+  myScore: number;
+  oppScore: number;
+  myAccuracy: number;
+  oppAccuracy: number;
+  myTime: number;
+  oppTime: number;
+}
+
+const MP_HISTORY_KEY = 'kazoe-multiplayer-history';
+
+function loadMultiplayerHistory(): MultiplayerHistoryEntry[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(MP_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveMultiplayerHistory(history: MultiplayerHistoryEntry[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(MP_HISTORY_KEY, JSON.stringify(history));
+}
+
 // --- Achievement Badges ---
 export interface Badge {
   id: string;
@@ -102,6 +131,7 @@ interface AppStore {
   practiceConfig: PracticeConfig;
   session: SessionState;
   history: HistoryEntry[];
+  multiplayerHistory: MultiplayerHistoryEntry[];
   badges: Badge[];
   theme: 'light' | 'dark';
   // Actions
@@ -109,6 +139,7 @@ interface AppStore {
   startSession: () => void;
   submitAnswer: (answer: number | 'skipped') => void;
   endSession: () => void;
+  saveMultiplayerMatch: (entry: MultiplayerHistoryEntry) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
   clearHistory: () => void;
@@ -224,8 +255,19 @@ export const useAppStore = create<AppStore>((set, get) => {
       finishedAt: null,
     },
     history: loadHistory(),
+    multiplayerHistory: loadMultiplayerHistory(),
     badges: loadAchievements(),
     theme: initialTheme,
+
+    saveMultiplayerMatch: (entry) => {
+      set((state) => {
+        // Prevent duplicate entries for the same match ID
+        if (state.multiplayerHistory.some(h => h.id === entry.id)) return state;
+        const newHistory = [...state.multiplayerHistory, entry];
+        saveMultiplayerHistory(newHistory);
+        return { multiplayerHistory: newHistory };
+      });
+    },
 
     setTheme: (theme) => {
       if (typeof window !== 'undefined') {
