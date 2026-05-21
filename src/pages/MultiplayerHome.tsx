@@ -132,7 +132,7 @@ export default memo(function MultiplayerHome() {
           >
             group_add
           </span>
-          <h2 className="text-2xl font-bold mt-4" style={{ color: 'var(--color-on-surface)' }}>
+          <h2 className="text-2xl font-semibold mt-4" style={{ color: 'var(--color-on-surface)' }}>
             Room Created
           </h2>
           <p className="mt-2 text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
@@ -163,7 +163,7 @@ export default memo(function MultiplayerHome() {
               hourglass_top
             </span>
             <p className="text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
-              Waiting for opponent to join...
+              Waiting for opponent to join…
             </p>
             <button
               onClick={handleCancelRoom}
@@ -188,7 +188,7 @@ export default memo(function MultiplayerHome() {
           >
             swords
           </span>
-          <h1 className="text-3xl font-bold mt-2" style={{ color: 'var(--color-on-surface)' }}>
+          <h1 className="text-3xl font-semibold mt-2" style={{ color: 'var(--color-on-surface)' }}>
             Multiplayer
           </h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
@@ -199,7 +199,7 @@ export default memo(function MultiplayerHome() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div className="md:col-span-3 card p-6 flex flex-col gap-6">
             <div className="flex items-center justify-between">
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-on-surface)', margin: 0 }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-on-surface)', margin: 0 }}>
                 Mastery Level
               </h2>
               <span
@@ -287,7 +287,7 @@ export default memo(function MultiplayerHome() {
 
           <div className="md:col-span-2 flex flex-col gap-6">
             <div className="card p-6 flex flex-col items-center gap-4">
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-on-surface)', margin: 0, alignSelf: 'start' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-on-surface)', margin: 0, alignSelf: 'start' }}>
                 Preview
               </h2>
 
@@ -325,7 +325,7 @@ export default memo(function MultiplayerHome() {
                   <>
                     <div className="flex flex-col items-end gap-2">
                       {sampleOperands.map((op, i) => (
-                        <div key={i} className="flex items-baseline gap-4">
+                        <div key={`preview-${sampleOperands.map(o => `${o.sign}${o.value}`).join('|')}-row${i}`} className="flex items-baseline gap-4">
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', color: 'var(--color-on-surface-variant)', width: '1.5rem', textAlign: 'right' }}>{op.sign}</span>
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2.5rem', fontWeight: 500, color: 'var(--color-on-surface)', letterSpacing: '0.05em' }}>{op.value}</span>
                         </div>
@@ -375,7 +375,7 @@ export default memo(function MultiplayerHome() {
                       disabled={!canPlay || loading}
                       className="btn-primary w-full justify-center"
                     >
-                      {loading ? 'Creating...' : 'Create Room'}
+                      {loading ? 'Creating…' : 'Create Room'}
                     </button>
                   </div>
                 ) : (
@@ -400,7 +400,7 @@ export default memo(function MultiplayerHome() {
                       disabled={roomCode.replace(/-/g, '').length !== 6 || loading}
                       className="btn-primary w-full justify-center mt-4"
                     >
-                      {loading ? 'Joining...' : 'Join Room'}
+                      {loading ? 'Joining…' : 'Join Room'}
                     </button>
                   </div>
                 )}
@@ -417,7 +417,7 @@ export default memo(function MultiplayerHome() {
 
         {isAuthenticating && (
           <p className="mt-6 text-sm text-center" style={{ color: 'var(--color-on-surface-variant)' }}>
-            Signing in...
+            Signing in…
           </p>
         )}
       </div>

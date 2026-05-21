@@ -153,19 +153,22 @@ export default function Home() {
     let todayAttempted = 0;
     let todaySessions = 0;
 
+    const gradeRank = new Map(gradeOrder.map((g, i) => [g, i]));
+
     for (const entry of history) {
-      totalCorrect += entry.result.totalCorrect;
-      totalAttempted += entry.result.totalAttempted;
-      if (entry.result.bestStreak > bestStreak) bestStreak = entry.result.bestStreak;
-      totalTimeSeconds += entry.result.timeUsedSeconds;
-      totalPoints += entry.result.totalCorrect * 10 + (gradeBonus[entry.grade] || 0);
-      const gradeIndex = gradeOrder.indexOf(entry.grade);
+      const { totalCorrect: entryCorrect, totalAttempted: entryAttempted, bestStreak: entryStreak, timeUsedSeconds: entryTime } = entry.result;
+      totalCorrect += entryCorrect;
+      totalAttempted += entryAttempted;
+      if (entryStreak > bestStreak) bestStreak = entryStreak;
+      totalTimeSeconds += entryTime;
+      totalPoints += entryCorrect * 10 + (gradeBonus[entry.grade] || 0);
+      const gradeIndex = gradeRank.get(entry.grade) ?? 0;
       if (gradeIndex > bestGradeIdx) bestGradeIdx = gradeIndex;
 
       if (entry.timestamp >= todayCutoff) {
         todaySessions++;
-        todayCorrect += entry.result.totalCorrect;
-        todayAttempted += entry.result.totalAttempted;
+        todayCorrect += entryCorrect;
+        todayAttempted += entryAttempted;
       }
     }
 
@@ -212,7 +215,7 @@ export default function Home() {
               style={{
                 fontFamily: 'var(--font-display)',
                 fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
-                fontWeight: 700,
+                fontWeight: 600,
                 color: 'var(--color-on-surface)',
                 lineHeight: 1.15,
               }}
@@ -268,7 +271,7 @@ export default function Home() {
               >
                 {goalPercent}%
               </span>
-              <span className="label-caps" style={{ fontSize: '0.6rem' }}>
+              <span className="label-caps" style={{ fontSize: '0.75rem' }}>
                 {stats.todaySessions}/{DAILY_GOAL} today
               </span>
             </div>
@@ -290,7 +293,7 @@ export default function Home() {
                   style={{
                     fontFamily: 'var(--font-display)',
                     fontSize: '1.5rem',
-                    fontWeight: 700,
+                    fontWeight: 600,
                     color: 'var(--color-on-surface)',
                     margin: 0,
                   }}
@@ -448,7 +451,7 @@ export default function Home() {
                 style={{
                   fontFamily: 'var(--font-display)',
                   fontSize: '1.25rem',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   color: 'var(--color-on-surface)',
                   margin: 0,
                 }}
@@ -468,7 +471,7 @@ export default function Home() {
                 >
                   <div className="flex items-center gap-3">
                     <span
-                      className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold"
+                      className="size-9 rounded-lg flex items-center justify-center text-sm font-bold"
                       style={{
                         fontFamily: 'var(--font-mono)',
                         backgroundColor: gradeColor(entry.grade),
@@ -482,7 +485,7 @@ export default function Home() {
                         className="text-sm font-semibold"
                         style={{ color: 'var(--color-on-surface)' }}
                       >
-                        Level {entry.level} — {entry.result.totalCorrect}/{entry.result.totalAttempted}
+                        Level {entry.level}: {entry.result.totalCorrect}/{entry.result.totalAttempted}
                       </span>
                       <span className="text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>
                         {formatTimeAgo(entry.timestamp)}
@@ -518,7 +521,7 @@ export default function Home() {
           >
             <div className="flex items-center gap-3">
               <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                className="size-10 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: 'var(--color-surface-container)' }}
               >
                 <span
@@ -532,7 +535,7 @@ export default function Home() {
                 style={{
                   fontFamily: 'var(--font-display)',
                   fontSize: '1.25rem',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   color: 'var(--color-on-surface)',
                   margin: 0,
                 }}
@@ -559,7 +562,7 @@ export default function Home() {
           >
             <div className="flex items-center gap-3">
               <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                className="size-10 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: 'var(--color-surface-container)' }}
               >
                 <span
@@ -573,7 +576,7 @@ export default function Home() {
                 style={{
                   fontFamily: 'var(--font-display)',
                   fontSize: '1.25rem',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   color: 'var(--color-on-surface)',
                   margin: 0,
                 }}
@@ -621,7 +624,7 @@ const StatBlock = memo(function StatBlock({ icon, label, value }: { icon: string
       >
         {value}
       </span>
-      <span className="label-caps" style={{ fontSize: '0.6rem' }}>{label}</span>
+      <span className="label-caps" style={{ fontSize: '0.75rem' }}>{label}</span>
     </div>
   );
 });

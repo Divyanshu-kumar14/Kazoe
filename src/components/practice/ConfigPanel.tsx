@@ -72,7 +72,7 @@ export const ConfigPanel = memo(function ConfigPanel() {
             style={{
               fontFamily: 'var(--font-display)',
               fontSize: '1.5rem',
-              fontWeight: 700,
+              fontWeight: 600,
               color: 'var(--color-on-surface)',
               margin: 0,
             }}
@@ -219,7 +219,7 @@ export const ConfigPanel = memo(function ConfigPanel() {
             style={{
               fontFamily: 'var(--font-display)',
               fontSize: '1.5rem',
-              fontWeight: 700,
+              fontWeight: 600,
               color: 'var(--color-on-surface)',
               margin: 0,
               alignSelf: 'start',
@@ -302,8 +302,10 @@ export const ConfigPanel = memo(function ConfigPanel() {
               /* Vertical preview for add/sub */
               <>
                 <div className="flex flex-col items-end gap-2">
-                  {sampleOperands.map((op, i) => (
-                    <div key={i} className="flex items-baseline gap-4">
+                  {sampleOperands.map((op, idx) => {
+                    const rowKey = sampleOperands.slice(0, idx + 1).map(o => `${o.sign}${o.value}`).join('-');
+                    return (
+                    <div key={`preview-${rowKey}`} className="flex items-baseline gap-4">
                       <span
                         style={{
                           fontFamily: 'var(--font-mono)',
@@ -327,7 +329,8 @@ export const ConfigPanel = memo(function ConfigPanel() {
                         {op.value}
                       </span>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div

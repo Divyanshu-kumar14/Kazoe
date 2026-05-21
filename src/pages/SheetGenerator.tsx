@@ -88,7 +88,7 @@ export default memo(function SheetGenerator() {
             style={{
               fontFamily: 'var(--font-display)',
               fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
-              fontWeight: 700,
+              fontWeight: 600,
               color: 'var(--color-on-surface)',
               margin: 0,
             }}
@@ -137,8 +137,9 @@ export default memo(function SheetGenerator() {
           }}
         >
           <div className="flex flex-col gap-2">
-            <label className="label-caps">Level</label>
+            <label htmlFor="level-select" className="label-caps">Level</label>
             <select
+              id="level-select"
               className="input-field"
               value={level}
               onChange={(e) => setLevel(Number(e.target.value))}
@@ -150,8 +151,9 @@ export default memo(function SheetGenerator() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="label-caps">Questions</label>
+            <label htmlFor="question-count-select" className="label-caps">Questions</label>
             <select
+              id="question-count-select"
               className="input-field"
               value={questionCount}
               onChange={(e) => setQuestionCount(Number(e.target.value))}
@@ -165,8 +167,9 @@ export default memo(function SheetGenerator() {
           {!isMultDiv && (
             <>
               <div className="flex flex-col gap-2">
-                <label className="label-caps">Columns</label>
+                <label htmlFor="columns-select" className="label-caps">Columns</label>
                 <select
+                  id="columns-select"
                   className="input-field"
                   value={columns}
                   onChange={(e) => setColumns(Number(e.target.value))}
@@ -178,8 +181,9 @@ export default memo(function SheetGenerator() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="label-caps">Rows (Override)</label>
+                <label htmlFor="rows-override-select" className="label-caps">Rows (Override)</label>
                 <select
+                  id="rows-override-select"
                   className="input-field"
                   value={rowOverride || ''}
                   onChange={(e) => {
@@ -227,7 +231,7 @@ export default memo(function SheetGenerator() {
               >
                 {questions.map((q, idx) => (
                   <div
-                    key={idx}
+                    key={`mult-q-${q.operands.join('-')}-${q.answer}`}
                     className="card px-5 py-4 flex items-center gap-4"
                     style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
                   >
@@ -235,7 +239,7 @@ export default memo(function SheetGenerator() {
                     <span
                       className="label-caps"
                       style={{
-                        fontSize: '0.6rem',
+                        fontSize: '0.75rem',
                         minWidth: '2rem',
                         color: 'var(--color-on-surface-variant)',
                       }}
@@ -312,12 +316,12 @@ export default memo(function SheetGenerator() {
               >
                 {questions.map((q, idx) => (
                   <div
-                    key={idx}
+                    key={`sheet-q-${q.operands.join('-')}-ans${q.answer}`}
                     className="card p-4 flex flex-col items-center"
                     style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
                   >
                     {/* Question number */}
-                    <span className="label-caps mb-2" style={{ alignSelf: 'start', fontSize: '0.6rem' }}>
+                    <span className="label-caps mb-2" style={{ alignSelf: 'start', fontSize: '0.75rem' }}>
                       #{idx + 1}
                     </span>
 
@@ -393,7 +397,7 @@ export default memo(function SheetGenerator() {
                     style={{
                       fontFamily: 'var(--font-display)',
                       fontSize: '1.375rem',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       color: 'var(--color-on-surface)',
                       margin: 0,
                     }}
@@ -425,9 +429,9 @@ export default memo(function SheetGenerator() {
                       >
                         <span style={{
                           fontFamily: 'var(--font-body)',
-                          fontSize: '0.6875rem',
-                          fontWeight: 700,
-                          letterSpacing: '0.08em',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          letterSpacing: '0.05em',
                           textTransform: 'uppercase',
                           color: 'var(--color-on-surface-variant)',
                         }}>
@@ -435,9 +439,9 @@ export default memo(function SheetGenerator() {
                         </span>
                         <span style={{
                           fontFamily: 'var(--font-body)',
-                          fontSize: '0.6875rem',
-                          fontWeight: 700,
-                          letterSpacing: '0.08em',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          letterSpacing: '0.05em',
                           textTransform: 'uppercase',
                           color: 'var(--color-on-surface-variant)',
                           textAlign: 'right',
@@ -465,18 +469,18 @@ export default memo(function SheetGenerator() {
                           const qIdx = rowIdx * 5 + colIdx;
                           if (qIdx >= questions.length) {
                             return (
-                              <div
-                                key={colIdx}
-                                style={{
-                                  padding: '0.75rem 1rem',
-                                  borderRight: colIdx < 4 ? '1px solid var(--color-outline-variant)' : 'none',
-                                }}
-                              />
+                          <div
+                            key={`empty-${colIdx}-${rowIdx}`}
+                            style={{
+                              padding: '0.75rem 1rem',
+                              borderRight: colIdx < 4 ? '1px solid var(--color-outline-variant)' : 'none',
+                            }}
+                          />
                             );
                           }
-                          return (
-                            <div
-                              key={colIdx}
+                        return (
+                          <div
+                            key={`cell-${colIdx}-${qIdx}`}
                               style={{
                                 display: 'grid',
                                 gridTemplateColumns: '2.5rem 1fr',

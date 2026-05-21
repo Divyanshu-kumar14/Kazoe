@@ -10,16 +10,18 @@ interface CountdownProps {
 const Countdown = memo(function Countdown({ onDone }: CountdownProps) {
   const [count, setCount] = useState(3);
   const { playTick } = useSound();
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   useEffect(() => {
     if (count === 0) {
-      onDone();
+      onDoneRef.current();
       return;
     }
     playTick();
     const t = setTimeout(() => setCount((c) => c - 1), 1000);
     return () => clearTimeout(t);
-  }, [count, onDone, playTick]);
+  }, [count, playTick]);
 
   return (
     <div
@@ -125,7 +127,7 @@ export function TestInterface() {
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = 'Test in progress — leaving will reset your session';
+      e.returnValue = 'Test in progress, leaving will reset your session';
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
@@ -372,9 +374,11 @@ export function TestInterface() {
           style={{
             height: '100%',
             borderRadius: '2px',
-            width: `${progress}%`,
+            width: '100%',
+            transformOrigin: 'left center',
+            transform: `scaleX(${progress / 100})`,
             backgroundColor: 'var(--color-primary)',
-            transition: 'width 0.4s cubic-bezier(0.25,1,0.5,1)',
+            transition: 'transform 0.4s cubic-bezier(0.25,1,0.5,1)',
           }}
         />
       </div>
@@ -391,7 +395,7 @@ export function TestInterface() {
           <span
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.6875rem',
+              fontSize: '0.75rem',
               fontWeight: 600,
               letterSpacing: '0.08em',
               color: 'var(--color-on-surface-variant)',
@@ -498,8 +502,14 @@ export function TestInterface() {
                   outline: 'none',
                   textAlign: 'center',
                   padding: '0.5rem 0.75rem',
-                  transition: 'border-color 0.2s ease, color 0.2s ease',
+                  transition: 'border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
                   caretColor: 'var(--color-primary)',
+                }}
+                onFocus={(e) => {
+                  e.target.style.boxShadow = '0 0 0 2px var(--color-primary)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.boxShadow = 'none';
                 }}
               />
             </div>
@@ -515,15 +525,17 @@ export function TestInterface() {
                 paddingRight: '0.25rem',
               }}
             >
-              {currentQuestion.operands.map((op, i) => (
+              {currentQuestion.operands.map((op, idx) => {
+                const rowKey = currentQuestion.operands.slice(0, idx + 1).join('-');
+                return (
                 <div
-                  key={i}
+                  key={`op-${rowKey}`}
                   className="animate-fade-in"
                   style={{
                     display: 'flex',
                     alignItems: 'baseline',
                     gap: '0.75rem',
-                    animationDelay: `${i * 50}ms`,
+                    animationDelay: `${idx * 50}ms`,
                   }}
                 >
                   <span
@@ -536,7 +548,7 @@ export function TestInterface() {
                       textAlign: 'right',
                     }}
                   >
-                    {i === 0 ? '' : op < 0 ? '−' : '+'}
+                    {idx === 0 ? '' : op < 0 ? '−' : '+'}
                   </span>
                   <span
                     style={{
@@ -551,7 +563,8 @@ export function TestInterface() {
                     {Math.abs(op)}
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <div
@@ -608,8 +621,14 @@ export function TestInterface() {
                   outline: 'none',
                   textAlign: 'right',
                   padding: '0.375rem 0.625rem',
-                  transition: 'border-color 0.2s ease, color 0.2s ease',
+                  transition: 'border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
                   caretColor: 'var(--color-primary)',
+                }}
+                onFocus={(e) => {
+                  e.target.style.boxShadow = '0 0 0 2px var(--color-primary)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.boxShadow = 'none';
                 }}
               />
             </div>
@@ -682,7 +701,7 @@ export function TestInterface() {
           backgroundColor: 'var(--color-surface-container)',
           border: '1px solid var(--color-outline-variant)',
           fontFamily: 'var(--font-mono)',
-          fontSize: '0.6875rem',
+          fontSize: '0.75rem',
         }}>Enter</kbd> submit
         {' · '}
         <kbd style={{
@@ -691,7 +710,7 @@ export function TestInterface() {
           backgroundColor: 'var(--color-surface-container)',
           border: '1px solid var(--color-outline-variant)',
           fontFamily: 'var(--font-mono)',
-          fontSize: '0.6875rem',
+          fontSize: '0.75rem',
         }}>Esc</kbd> skip
       </p>
     </div>

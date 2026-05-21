@@ -32,7 +32,7 @@ export default function MultiplayerResults() {
               >
                 handshake
               </span>
-              <h1 className="text-3xl font-bold mt-3" style={{ color: 'var(--color-on-surface)' }}>
+              <h1 className="text-3xl font-semibold mt-3" style={{ color: 'var(--color-on-surface)' }}>
                 It's a Draw!
               </h1>
             </>
@@ -44,7 +44,7 @@ export default function MultiplayerResults() {
               >
                 emoji_events
               </span>
-              <h1 className="text-3xl font-bold mt-3" style={{ color: 'var(--color-primary)' }}>
+              <h1 className="text-3xl font-semibold mt-3" style={{ color: 'var(--color-primary)' }}>
                 You Win!
               </h1>
             </>
@@ -56,7 +56,7 @@ export default function MultiplayerResults() {
               >
                 sentiment_dissatisfied
               </span>
-              <h1 className="text-3xl font-bold mt-3" style={{ color: 'var(--color-on-surface)' }}>
+              <h1 className="text-3xl font-semibold mt-3" style={{ color: 'var(--color-on-surface)' }}>
                 You Lost
               </h1>
             </>
@@ -100,7 +100,7 @@ export default function MultiplayerResults() {
         </div>
 
         <div className="mt-6 card p-4">
-          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--color-on-surface-variant)' }}>
+          <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--color-on-surface-variant)' }}>
             Stats
           </h3>
           <div className="mt-3 space-y-3">

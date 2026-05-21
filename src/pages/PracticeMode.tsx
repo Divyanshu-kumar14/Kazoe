@@ -9,7 +9,7 @@ export default function PracticeMode() {
             style={{
               fontFamily: 'var(--font-display)',
               fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
-              fontWeight: 700,
+              fontWeight: 600,
               color: 'var(--color-on-surface)',
               margin: 0,
             }}

@@ -76,7 +76,7 @@ export default memo(function MultiplayerGame() {
   if (!match || !question) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p style={{ color: 'var(--color-on-surface-variant)' }}>Loading...</p>
+        <p style={{ color: 'var(--color-on-surface-variant)' }}>Loading…</p>
       </div>
     );
   }
@@ -102,7 +102,7 @@ export default memo(function MultiplayerGame() {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-primary)' }} />
+              <div className="size-2.5 rounded-full" style={{ backgroundColor: 'var(--color-primary)' }} />
               <span className="text-sm font-bold" style={{ color: 'var(--color-on-surface)' }}>
                 {myScore}
               </span>
@@ -110,7 +110,7 @@ export default memo(function MultiplayerGame() {
             </div>
             <span className="text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>vs</span>
             <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-secondary)' }} />
+              <div className="size-2.5 rounded-full" style={{ backgroundColor: 'var(--color-secondary)' }} />
               <span className="text-sm font-bold" style={{ color: 'var(--color-on-surface)' }}>
                 {oppScore}
               </span>
@@ -154,7 +154,7 @@ export default memo(function MultiplayerGame() {
                   fontFamily: 'var(--font-mono)',
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  letterSpacing: '0.08em',
+                  letterSpacing: '0.05em',
                   color: 'var(--color-on-surface-variant)',
                   backgroundColor: 'var(--color-surface-container)',
                   padding: '0.1875rem 0.625rem',
@@ -243,8 +243,14 @@ export default memo(function MultiplayerGame() {
                         outline: 'none',
                         textAlign: 'center',
                         padding: '0.5rem 0.75rem',
-                        transition: 'border-color 0.2s ease, color 0.2s ease',
+                        transition: 'border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
                         caretColor: 'var(--color-primary)',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.boxShadow = '0 0 0 2px var(--color-primary)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.boxShadow = 'none';
                       }}
                     />
                   </div>
@@ -261,7 +267,7 @@ export default memo(function MultiplayerGame() {
                 }}>
                   {question.operands.map((op, i) => (
                     <div
-                      key={i}
+                      key={`op-${i}-${op}`}
                       style={{
                         display: 'flex',
                         alignItems: 'baseline',
@@ -417,7 +423,7 @@ export default memo(function MultiplayerGame() {
               backgroundColor: 'var(--color-surface-container)',
               border: '1px solid var(--color-outline-variant)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.6875rem',
+              fontSize: '0.75rem',
             }}>Enter</kbd> submit
             {' · '}
             <kbd style={{
@@ -426,7 +432,7 @@ export default memo(function MultiplayerGame() {
               backgroundColor: 'var(--color-surface-container)',
               border: '1px solid var(--color-outline-variant)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.6875rem',
+              fontSize: '0.75rem',
             }}>Esc</kbd> skip
           </p>
         </div>
@@ -465,7 +471,7 @@ export default memo(function MultiplayerGame() {
       {forfeitTimer !== null && (
         <div className="fixed bottom-0 left-0 right-0 p-4 z-40" style={{ backgroundColor: 'var(--color-surface-container-highest)', borderTop: '1px solid var(--color-outline-variant)' }}>
           <p className="text-center text-sm font-medium" style={{ color: 'var(--color-status-error)' }}>
-            Opponent disconnected — winning by forfeit in {forfeitTimer}s
+            Opponent disconnected, winning by forfeit in {forfeitTimer}s
           </p>
         </div>
       )}
