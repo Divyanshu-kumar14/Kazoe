@@ -23,9 +23,10 @@ function generateAddSubQuestion(config: LevelConfig, rng: () => number): Questio
   const additionOnly = config.operations === 'addition';
 
   // First operand: positive starting value within digit range
-  // Bias higher for subtraction-heavy configs to ensure room for subtraction
+  // For addition-only, leave room for (rowCount - 1) minimum additions of 1
+  // For subtraction-heavy configs, bias higher to ensure room for subtraction
   const minFirst = additionOnly ? 1 : Math.max(1, Math.floor(maxVal * 0.3));
-  const firstMax = additionOnly ? maxVal - 1 : maxVal;
+  const firstMax = additionOnly ? Math.max(minFirst, maxVal - (config.rowCount - 1)) : maxVal;
   const first = Math.max(minFirst, Math.floor(rng() * Math.max(firstMax, 1)) + 1);
   operands.push(first);
   let runningTotal = first;
@@ -59,10 +60,8 @@ function generateAddSubQuestion(config: LevelConfig, rng: () => number): Questio
       operands.push(-operand);
       runningTotal -= operand;
     } else {
-      // Edge case: can't add (at ceiling) AND can't subtract (addition-only or total=0)
-      // Just add 1 — slightly exceeds digit ceiling but keeps math correct
-      operands.push(1);
-      runningTotal += 1;
+      // Fallback: keep total unchanged (should be unreachable with correct bounds)
+      operands.push(0);
     }
   }
 

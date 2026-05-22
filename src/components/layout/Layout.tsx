@@ -163,9 +163,7 @@ export function Layout() {
               © 2024 Kazoe. Precision in every bead.
             </span>
             <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
-              <span>Print Settings</span>
-              <span style={{ color: 'var(--color-outline-variant)' }}>|</span>
-              <span>Terms of Mastery</span>
+              <span>Precision in every bead</span>
             </div>
           </div>
         </footer>

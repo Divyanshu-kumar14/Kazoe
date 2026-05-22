@@ -68,6 +68,7 @@ export interface MultiplayerState {
   cancelMatchmaking: () => Promise<void>;
   setForfeitTimer: (value: number | null) => void;
   setUsername: (username: string | null) => void;
+  tickTimer: (timeRemaining: number) => void;
   reset: () => void;
 }
 
@@ -90,6 +91,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
 
   gameStartTime: 0,
   questionStartTime: 0,
+  tickTimer: (timeRemaining: number) => set({ timeRemaining }),
   timeRemaining: 180,
 
   forfeitTimer: null,
@@ -103,10 +105,10 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     set({ isAuthenticating: true, authError: null });
     try {
       const userId = await getUserId();
-      const profile = await getProfile(userId);
+      const profileResult = await getProfile(userId);
       set({ 
         userId, 
-        username: profile?.username || null,
+        username: profileResult.data?.username ?? null,
         isAuthenticating: false 
       });
       return userId;

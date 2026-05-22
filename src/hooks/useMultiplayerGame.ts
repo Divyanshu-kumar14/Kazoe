@@ -152,7 +152,7 @@ export function useMultiplayerGame() {
       const remaining = Math.max(0, duration - elapsed);
 
       if (Math.round(remaining) !== Math.round(state.timeRemaining)) {
-        useMultiplayerStore.setState({ timeRemaining: remaining });
+        state.tickTimer(remaining);
       }
 
       if (remaining <= 0) {

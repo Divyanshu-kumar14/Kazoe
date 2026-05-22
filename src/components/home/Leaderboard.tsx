@@ -14,9 +14,9 @@ export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore:
     let mounted = true;
     async function load() {
       setState(prev => ({ ...prev, isLoading: true }));
-      const data = await getLeaderboard(50);
+      const result = await getLeaderboard(50);
       if (mounted) {
-        setState({ leaderboard: data, isLoading: false });
+        setState({ leaderboard: result.data ?? [], isLoading: false });
       }
     }
     load();

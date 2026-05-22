@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { SOROBAN_LEVELS } from '../utils/levelConfig';
 import { generateQuestion } from '../utils/questionGenerator';
 
@@ -20,7 +20,7 @@ interface SheetQuestion {
   operation: QuestionType;
 }
 
-export default memo(function SheetGenerator() {
+export default function SheetGenerator() {
   const [level, setLevel] = useState(10);
   const [questionCount, setQuestionCount] = useState(20);
   const [columns, setColumns] = useState(4);
@@ -741,4 +741,4 @@ export default memo(function SheetGenerator() {
       </div>
     </div>
   );
-});
+}
