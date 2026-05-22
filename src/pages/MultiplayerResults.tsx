@@ -204,7 +204,7 @@ export default function MultiplayerResults() {
         </div>
 
         <div className="mt-8 flex gap-3">
-          <button
+          <button type="button"
             onClick={() => {
               useMultiplayerStore.getState().reset();
               navigate('/multiplayer', { replace: true });
@@ -213,7 +213,7 @@ export default function MultiplayerResults() {
           >
             Back to Lobby
           </button>
-          <button
+          <button type="button"
             onClick={() => {
               useMultiplayerStore.getState().reset();
               navigate('/multiplayer', { replace: true });

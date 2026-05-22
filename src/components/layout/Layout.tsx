@@ -79,7 +79,7 @@ export function Layout() {
 
             {/* Right section */}
             <div className="flex items-center gap-2">
-              <button
+              <button type="button"
                 onClick={toggleTheme}
                 className="size-9 flex items-center justify-center rounded-full transition-colors icon-btn"
                 style={{
@@ -94,7 +94,7 @@ export function Layout() {
                 </span>
               </button>
 
-              <button
+              <button type="button"
                 className="size-9 flex items-center justify-center rounded-full transition-colors icon-btn"
                 style={{
                   color: 'var(--color-on-surface-variant)',

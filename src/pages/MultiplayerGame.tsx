@@ -237,6 +237,7 @@ export default memo(function MultiplayerGame() {
                     <input
                       ref={inputRef}
                       value={inputValue}
+                      aria-label="Answer input"
                       onChange={(e) => setInputValue(e.target.value.replace(/[^0-9-]/g, ''))}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleSubmit();
@@ -339,6 +340,7 @@ export default memo(function MultiplayerGame() {
                     <input
                       ref={inputRef}
                       value={inputValue}
+                      aria-label="Answer input"
                       onChange={(e) => setInputValue(e.target.value.replace(/[^0-9-]/g, ''))}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleSubmit();
@@ -383,7 +385,7 @@ export default memo(function MultiplayerGame() {
 
           {matchStatus === 'playing' && (
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
-              <button
+              <button type="button"
                 onClick={handleSkip}
                 style={{
                   flex: '0 0 auto',
@@ -400,7 +402,7 @@ export default memo(function MultiplayerGame() {
               >
                 Skip question
               </button>
-              <button
+              <button type="button"
                 onClick={handleSubmit}
                 disabled={inputValue === ''}
                 style={{

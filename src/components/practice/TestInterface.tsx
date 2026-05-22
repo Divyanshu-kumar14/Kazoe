@@ -79,7 +79,7 @@ function PausedScreen({ onResume, onQuit }: { onResume: () => void; onQuit: () =
         PAUSED
       </span>
       <div style={{ display: 'flex', gap: '1rem' }}>
-        <button
+        <button type="button"
           onClick={onResume}
           className="btn-primary"
           style={{ fontWeight: 700 }}
@@ -89,7 +89,7 @@ function PausedScreen({ onResume, onQuit }: { onResume: () => void; onQuit: () =
           </span>
           Resume
         </button>
-        <button
+        <button type="button"
           onClick={onQuit}
           className="btn-secondary"
           style={{ fontWeight: 700 }}
@@ -179,9 +179,11 @@ export function TestInterface() {
   }, []);
 
   useEffect(() => {
+    const shakeTimer = shakeTimerRef.current;
+    const flashTimer = flashTimerRef.current;
     return () => {
-      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
-      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+      if (shakeTimer) clearTimeout(shakeTimer);
+      if (flashTimer) clearTimeout(flashTimer);
     };
   }, []);
 
@@ -350,7 +352,7 @@ export function TestInterface() {
           >
             {currentIndex} done
           </span>
-          <button
+          <button type="button"
             onClick={togglePause}
             title="Pause session"
             className="icon-btn"
@@ -660,7 +662,7 @@ export function TestInterface() {
           maxWidth: '380px',
         }}
       >
-        <button
+        <button type="button"
           onClick={handleSkip}
           className="skip-btn"
           style={{
@@ -678,7 +680,7 @@ export function TestInterface() {
         >
           Skip
         </button>
-        <button
+        <button type="button"
           onClick={handleSubmit}
           disabled={!canSubmit}
           className="submit-btn"

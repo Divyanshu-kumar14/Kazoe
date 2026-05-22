@@ -104,7 +104,7 @@ export default function SheetGenerator() {
           <span className="label-caps">Question Type</span>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {QUESTION_TYPE_OPTIONS.map((opt) => (
-              <button
+              <button type="button"
                 key={opt.value}
                 onClick={() => setQuestionType(opt.value)}
                 className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all"
@@ -202,19 +202,19 @@ export default function SheetGenerator() {
         </div>
 
         <div className="flex flex-wrap gap-3 sheet-no-print">
-          <button onClick={handleGenerate} className="btn-primary">
+          <button type="button" onClick={handleGenerate} className="btn-primary">
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>auto_awesome</span>
             Generate Sheet
           </button>
           {questions.length > 0 && (
             <>
-              <button onClick={() => setShowAnswers(!showAnswers)} className="btn-secondary">
+              <button type="button" onClick={() => setShowAnswers(!showAnswers)} className="btn-secondary">
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
                   {showAnswers ? 'visibility_off' : 'visibility'}
                 </span>
                 {showAnswers ? 'Hide Answer Key' : 'Show Answer Key'}
               </button>
-              <button onClick={handlePrint} className="btn-secondary">
+              <button type="button" onClick={handlePrint} className="btn-secondary">
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>print</span>
                 Print
               </button>
@@ -531,7 +531,7 @@ export default function SheetGenerator() {
 
             <div className="sheet-print-pages">
               {pages.map((pageQuestions, pageIdx) => (
-                <div key={`page-${pageIdx}`} className="sheet-page">
+                <div key={`page-${pageQuestions[0]?.operands.join('-')}-${pageIdx}`} className="sheet-page">
                   <div className="sheet-page-header">
                     <div className="sheet-page-title">
                       {isMultDiv
@@ -684,7 +684,7 @@ export default function SheetGenerator() {
 
               {/* ANSWER KEY PAGES — at the very end */}
               {showAnswers && answerPages.map((pageAnswers, apIdx) => (
-                <div key={`ans-${apIdx}`} className="sheet-page">
+                <div key={`ans-${questions[apIdx * 20]?.answer ?? apIdx}`} className="sheet-page">
                   <div className="sheet-page-header">
                     <div className="sheet-page-title">Answer Key</div>
                     <div className="sheet-page-meta">

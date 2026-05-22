@@ -48,6 +48,12 @@ Earn points (10 per correct answer + grade bonus) to climb 8 tiers:
 
 A daily goal of 5 sessions is tracked with a visual progress ring on the dashboard.
 
+### ⚔️ Real-Time Multiplayer
+Challenge friends to 1v1 mental math battles in real-time. Matches are synchronized using Supabase, featuring:
+- **Live Matchmaking & Progress**: Join via invite link and see your opponent's score update in real-time
+- **Advanced Tiebreakers**: Comprehensive resolution for draws (correct count > accuracy > efficiency > speed)
+- **Competitive Profiles**: Win matches to earn rating points (Winner: +50, Draw: +25, Loser: +10) and climb the global leaderboard
+
 ### 📄 Sheet Generator
 Generate printable A4 practice sheets with on-screen preview and CSS-driven print layout (4 questions per page, 2×2 grid). Supports:
 
@@ -98,11 +104,17 @@ src/
 │   ├── Home.tsx         # Dashboard — stats, rank, history
 │   ├── PracticeMode.tsx # Session config wrapper
 │   ├── SheetGenerator.tsx # Print sheet generator
-│   └── LevelGuide.tsx   # Curriculum reference
+│   ├── LevelGuide.tsx   # Curriculum reference
+│   ├── MultiplayerHome.tsx # Lobby and matchmaking
+│   ├── MultiplayerGame.tsx # Real-time 1v1 game interface
+│   └── MultiplayerResults.tsx # Post-match summary
 ├── router/
 │   └── index.tsx        # React Router config + route guards
 ├── store/
-│   └── useAppStore.ts   # Zustand global state (theme, session, history, sheets)
+│   ├── useAppStore.ts   # Zustand global state (theme, session, history, sheets)
+│   └── useMultiplayerStore.ts # Multiplayer session and real-time state
+├── supabase/
+│   └── migrations/      # Database schema, RPCs, and RLS policies
 ├── utils/
 │   ├── questionGenerator.ts # Seeded add/sub question generation
 │   ├── questionGenerator.test.ts
@@ -114,7 +126,7 @@ src/
 ```
 
 ### State Management
-Global state is managed via **Zustand** with `localStorage` persistence for:
+Global state is managed via **Zustand** with `localStorage` persistence for local progress, while **Supabase** handles real-time multiplayer state:
 - Theme preference (`light` / `dark`)
 - Session history (all completed practice sessions)
 - Practice configuration (level, time, seed, overrides)
@@ -186,6 +198,7 @@ npm run lint     # ESLint with TypeScript + React Hooks rules
 | Category | Technology |
 |----------|-----------|
 | **Framework** | React 19, TypeScript 6 |
+| **Backend** | Supabase (PostgreSQL, Realtime) |
 | **Build** | Vite 8 |
 | **Styling** | Tailwind CSS 4 (with `@theme` design tokens) |
 | **Routing** | React Router 7 |

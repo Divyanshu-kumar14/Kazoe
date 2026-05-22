@@ -13,7 +13,6 @@ export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore:
   useEffect(() => {
     let mounted = true;
     async function load() {
-      setState(prev => ({ ...prev, isLoading: true }));
       const result = await getLeaderboard(50);
       if (mounted) {
         setState({ leaderboard: result.data ?? [], isLoading: false });

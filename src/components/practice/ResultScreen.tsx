@@ -198,7 +198,7 @@ export function ResultScreen() {
 
         {/* Question Review Toggle */}
         <div className="card p-6 flex flex-col gap-4">
-          <button
+          <button type="button"
             onClick={() => setShowReview((v) => !v)}
             className="btn-secondary w-full justify-center"
             style={{ fontWeight: 700 }}
@@ -288,14 +288,14 @@ export function ResultScreen() {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <button
+          <button type="button"
             onClick={() => navigate('/practice')}
             className="btn-secondary flex-1 justify-center py-3"
             style={{ fontWeight: 700 }}
           >
             Change Settings
           </button>
-          <button
+          <button type="button"
             onClick={() => {
               useAppStore.getState().startSession();
               navigate('/practice/session', { replace: true });
