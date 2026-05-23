@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, memo, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMultiplayerStore } from '../store/useMultiplayerStore';
 import { useMultiplayerGame } from '../hooks/useMultiplayerGame';
+import { MultiplayerGameSkeleton } from '../components/skeletons/MultiplayerGameSkeleton';
 
 export default memo(function MultiplayerGame() {
   const navigate = useNavigate();
@@ -89,11 +90,7 @@ export default memo(function MultiplayerGame() {
   }
 
   if (!match || !question) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <p style={{ color: 'var(--color-on-surface-variant)' }}>Loading…</p>
-      </div>
-    );
+    return <MultiplayerGameSkeleton />;
   }
 
   const isHorizontal = question.operation === 'multiplication' || question.operation === 'division';

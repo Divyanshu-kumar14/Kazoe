@@ -5,6 +5,13 @@ import { ResultScreen } from '../components/practice/ResultScreen';
 import { useAppStore } from '../store/useAppStore';
 import { useMultiplayerStore } from '../store/useMultiplayerStore';
 import { Layout } from '../components/layout/Layout';
+import { HomePageSkeleton } from '../components/skeletons/HomePageSkeleton';
+import { PracticeModeSkeleton } from '../components/skeletons/PracticeModeSkeleton';
+import { SheetGeneratorSkeleton } from '../components/skeletons/SheetGeneratorSkeleton';
+import { LevelGuideSkeleton } from '../components/skeletons/LevelGuideSkeleton';
+import { MultiplayerHomeSkeleton } from '../components/skeletons/MultiplayerHomeSkeleton';
+import { MultiplayerGameSkeleton } from '../components/skeletons/MultiplayerGameSkeleton';
+import { MultiplayerResultsSkeleton } from '../components/skeletons/MultiplayerResultsSkeleton';
 
 const Home = lazy(() => import('../pages/Home'));
 const PracticeMode = lazy(() => import('../pages/PracticeMode'));
@@ -14,16 +21,7 @@ const MultiplayerHome = lazy(() => import('../pages/MultiplayerHome'));
 const MultiplayerGame = lazy(() => import('../pages/MultiplayerGame'));
 const MultiplayerResults = lazy(() => import('../pages/MultiplayerResults'));
 
-function LoadingFallback() {
-  return (
-    <div className="flex-1 flex items-center justify-center p-8">
-      <div className="flex flex-col items-center gap-3 text-on-surface-variant">
-        <span className="material-symbols-outlined animate-pulse text-[32px]" role="img" aria-hidden="true">hourglass_empty</span>
-        <span className="text-sm font-medium">Loading…</span>
-      </div>
-    </div>
-  );
-}
+// LoadingFallback removed in favor of page-specific skeletons
 
 function SessionGuard({ children }: { children: React.ReactNode }) {
   const status = useAppStore((s) => s.session.status);
@@ -81,8 +79,8 @@ export function AppRouter() {
       <AuthInitializer>
         <Routes>
           <Route element={<Layout />}>
-            <Route path="/" element={<Suspense fallback={<LoadingFallback />}><Home /></Suspense>} />
-            <Route path="/practice" element={<Suspense fallback={<LoadingFallback />}><PracticeMode /></Suspense>} />
+            <Route path="/" element={<Suspense fallback={<HomePageSkeleton />}><Home /></Suspense>} />
+            <Route path="/practice" element={<Suspense fallback={<PracticeModeSkeleton />}><PracticeMode /></Suspense>} />
             <Route
               path="/practice/session"
               element={
@@ -99,15 +97,15 @@ export function AppRouter() {
                 </ResultsGuard>
               }
             />
-            <Route path="/sheets" element={<Suspense fallback={<LoadingFallback />}><SheetGenerator /></Suspense>} />
-            <Route path="/levels" element={<Suspense fallback={<LoadingFallback />}><LevelGuide /></Suspense>} />
+            <Route path="/sheets" element={<Suspense fallback={<SheetGeneratorSkeleton />}><SheetGenerator /></Suspense>} />
+            <Route path="/levels" element={<Suspense fallback={<LevelGuideSkeleton />}><LevelGuide /></Suspense>} />
 
-            <Route path="/multiplayer" element={<Suspense fallback={<LoadingFallback />}><MultiplayerHome /></Suspense>} />
+            <Route path="/multiplayer" element={<Suspense fallback={<MultiplayerHomeSkeleton />}><MultiplayerHome /></Suspense>} />
             <Route
               path="/multiplayer/game/:matchId"
               element={
                 <MultiplayerGameGuard>
-                  <Suspense fallback={<LoadingFallback />}><MultiplayerGame /></Suspense>
+                  <Suspense fallback={<MultiplayerGameSkeleton />}><MultiplayerGame /></Suspense>
                 </MultiplayerGameGuard>
               }
             />
@@ -115,7 +113,7 @@ export function AppRouter() {
               path="/multiplayer/results"
               element={
                 <MultiplayerResultsGuard>
-                  <Suspense fallback={<LoadingFallback />}><MultiplayerResults /></Suspense>
+                  <Suspense fallback={<MultiplayerResultsSkeleton />}><MultiplayerResults /></Suspense>
                 </MultiplayerResultsGuard>
               }
             />
