@@ -5,23 +5,13 @@ import { SOROBAN_LEVELS } from '../utils/levelConfig';
 import { generateQuestion } from '../utils/questionGenerator';
 import { subscribeToMatchUpdate } from '../lib/multiplayer';
 import { extractError } from '../lib/errors';
-
-const QUESTION_TYPE_OPTIONS = [
-  { value: 'add_sub' as const, label: 'Add / Sub', icon: 'add' },
-  { value: 'multiplication' as const, label: 'Multiply', icon: 'close' },
-  { value: 'division' as const, label: 'Division', icon: '÷' },
-];
+import { LevelSelector } from '../components/common/LevelSelector';
+import { QuestionTypeSelector } from '../components/common/QuestionTypeSelector';
+import { DurationSlider } from '../components/common/DurationSlider';
+import { QuestionPreview } from '../components/common/QuestionPreview';
+import type { QuestionType } from '../components/common/configOptions';
 
 type Tab = 'create' | 'join';
-
-function getRankForLevel(lvl: number) {
-  if (lvl <= 2) return 'Beginner';
-  if (lvl <= 4) return 'Intermediate';
-  if (lvl <= 6) return 'Advanced';
-  if (lvl <= 8) return 'Expert';
-  if (lvl <= 9) return 'Master';
-  return 'Grandmaster';
-}
 
 export default memo(function MultiplayerHome() {
   const navigate = useNavigate();
@@ -61,11 +51,6 @@ export default memo(function MultiplayerHome() {
     };
   }, []);
 
-  const levels = useMemo(
-    () => Object.keys(SOROBAN_LEVELS).map(Number).sort((a, b) => a - b),
-    []
-  );
-
   const currentLevelConfig = SOROBAN_LEVELS[multiplayerConfig.level]!;
 
   const sampleOperands = useMemo(() => {
@@ -73,8 +58,8 @@ export default memo(function MultiplayerHome() {
       const cfg = SOROBAN_LEVELS[multiplayerConfig.level]!;
       const q = generateQuestion(cfg, { operations: multiplayerConfig.questionType });
       return [
-        { sign: '', value: q.operands[0] },
-        { sign: multiplayerConfig.questionType === 'multiplication' ? '×' : '÷', value: q.operands[1] },
+        { sign: '', value: q.operands[0]! },
+        { sign: multiplayerConfig.questionType === 'multiplication' ? '×' : '÷', value: q.operands[1]! },
       ];
     }
     const rc = currentLevelConfig.rowCount;
@@ -128,7 +113,7 @@ export default memo(function MultiplayerHome() {
         <div className="max-w-sm w-full text-center">
           <span
             className="material-symbols-outlined"
-            style={{ fontSize: '48px', color: 'var(--color-primary)', fontVariationSettings: "'FILL' 1" }}
+            style={{ fontSize: '48px', color: 'var(--color-primary)', fontVariationSettings: "'FILL' 1" }} role="img" aria-hidden="true"
           >
             group_add
           </span>
@@ -159,7 +144,7 @@ export default memo(function MultiplayerHome() {
           </div>
 
           <div className="mt-8 flex flex-col items-center gap-2">
-            <span className="material-symbols-outlined animate-spin" style={{ color: 'var(--color-primary)' }}>
+            <span className="material-symbols-outlined animate-spin" style={{ color: 'var(--color-primary)' }} role="img" aria-hidden="true">
               hourglass_top
             </span>
             <p className="text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
@@ -184,7 +169,7 @@ export default memo(function MultiplayerHome() {
         <div className="text-center mb-6">
           <span
             className="material-symbols-outlined"
-            style={{ fontSize: '48px', color: 'var(--color-primary)', fontVariationSettings: "'FILL' 1" }}
+            style={{ fontSize: '48px', color: 'var(--color-primary)', fontVariationSettings: "'FILL' 1" }} role="img" aria-hidden="true"
           >
             swords
           </span>
@@ -197,92 +182,23 @@ export default memo(function MultiplayerHome() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          <div className="md:col-span-3 card p-6 flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-on-surface)', margin: 0 }}>
-                Mastery Level
-              </h2>
-              <span
-                className="px-3 py-1 rounded-full text-xs font-bold"
-                style={{
-                  backgroundColor: 'var(--color-secondary-container)',
-                  color: 'var(--color-on-secondary-container)',
-                  letterSpacing: '0.05em',
-                }}
-              >
-                🏆 {getRankForLevel(multiplayerConfig.level)}
-              </span>
-            </div>
+          <div className="md:col-span-3 flex flex-col gap-6">
+            <LevelSelector
+              level={multiplayerConfig.level}
+              onLevelChange={(lvl) => setMultiplayerConfig({ level: lvl })}
+            />
 
-            <div className="grid grid-cols-5 gap-3">
-              {levels.map((lvl) => {
-                const isSelected = multiplayerConfig.level === lvl;
-                return (
-                  <button type="button"
-                    key={lvl}
-                    onClick={() => setMultiplayerConfig({ level: lvl })}
-                    className="aspect-square rounded-lg flex items-center justify-center text-xl font-bold transition-all"
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      border: isSelected ? '3px solid var(--color-primary)' : '1px solid var(--color-outline-variant)',
-                      backgroundColor: isSelected ? 'var(--color-primary)' : 'var(--color-surface-container-low)',
-                      color: isSelected ? 'var(--color-on-primary)' : 'var(--color-on-surface)',
-                      cursor: 'pointer',
-                      boxShadow: isSelected ? '0 2px 8px rgba(0,89,92,0.25)' : 'none',
-                    }}
-                  >
-                    {lvl}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <span className="label-caps">Question Type</span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {QUESTION_TYPE_OPTIONS.map((opt) => (
-                  <button type="button"
-                    key={opt.value}
-                    onClick={() => setMultiplayerConfig({ questionType: opt.value })}
-                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all"
-                    style={{
-                      border: multiplayerConfig.questionType === opt.value ? '2px solid var(--color-primary)' : '1px solid var(--color-outline-variant)',
-                      backgroundColor: multiplayerConfig.questionType === opt.value ? 'var(--color-primary)' : 'var(--color-surface-container-low)',
-                      color: multiplayerConfig.questionType === opt.value ? 'var(--color-on-primary)' : 'var(--color-on-surface)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <span
-                      className={opt.icon.length > 1 ? 'material-symbols-outlined' : ''}
-                      style={{ fontSize: '16px', fontWeight: opt.icon.length > 1 ? undefined : 700 }}
-                    >
-                      {opt.icon}
-                    </span>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="card p-4 flex flex-col gap-3">
-              <span className="label-caps">Duration (Minutes)</span>
-              <input
-                type="range"
-                min={0.5}
-                max={15}
-                step={0.5}
-                value={multiplayerConfig.timeLimitSeconds / 60}
-                onChange={(e) => setMultiplayerConfig({ timeLimitSeconds: Math.round(Number(e.target.value) * 60) })}
-                aria-label="Match Duration in Minutes"
-                className="w-full accent-[var(--color-primary)]"
+            <div className="card p-6 flex flex-col gap-6">
+              <QuestionTypeSelector
+                questionType={multiplayerConfig.questionType as QuestionType}
+                onQuestionTypeChange={(qt) => setMultiplayerConfig({ questionType: qt })}
               />
-              <div className="flex justify-between text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>
-                <span>1</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--color-primary)', fontSize: '0.875rem' }}>
-                  {Math.round(multiplayerConfig.timeLimitSeconds / 60 * 10) / 10}
-                </span>
-                <span>15</span>
-              </div>
+
+              <DurationSlider
+                timeLimitSeconds={multiplayerConfig.timeLimitSeconds}
+                onDurationChange={(t) => setMultiplayerConfig({ timeLimitSeconds: t })}
+                ariaLabel="Match Duration in Minutes"
+              />
             </div>
           </div>
 
@@ -292,53 +208,10 @@ export default memo(function MultiplayerHome() {
                 Preview
               </h2>
 
-              <div
-                className="w-full rounded-lg p-6 flex flex-col items-center"
-                style={{
-                  backgroundColor: 'var(--color-surface-container-low)',
-                  border: '1px solid var(--color-outline-variant)',
-                }}
-              >
-                {multiplayerConfig.questionType === 'multiplication' || multiplayerConfig.questionType === 'division' ? (
-                  <div className="flex flex-col items-center gap-4 w-full">
-                    <div className="flex items-baseline gap-3">
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 600, color: 'var(--color-on-surface)', letterSpacing: '0.04em' }}>
-                        {sampleOperands[0]?.value ?? '97'}
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 500, color: 'var(--color-primary)' }}>
-                        {multiplayerConfig.questionType === 'multiplication' ? '×' : '÷'}
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 600, color: 'var(--color-on-surface)', letterSpacing: '0.04em' }}>
-                        {sampleOperands[1]?.value ?? '8'}
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 500, color: 'var(--color-outline)' }}>
-                        =
-                      </span>
-                    </div>
-                    <div
-                      className="rounded-md py-2 text-center"
-                      style={{ width: '120px', border: '1px dashed var(--color-outline-variant)', borderBottom: '3px solid var(--color-outline-variant)', fontFamily: 'var(--font-mono)', color: 'var(--color-outline)', fontSize: '0.875rem', borderRadius: '0.5rem 0.5rem 0 0' }}
-                    >
-                      ?
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex flex-col items-end gap-2">
-                      {sampleOperands.map((op, pos) => (
-                        <div key={`preview-${op.value}-${pos}`} className="flex items-baseline gap-4">
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', color: 'var(--color-on-surface-variant)', width: '1.5rem', textAlign: 'right' }}>{op.sign}</span>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2.5rem', fontWeight: 500, color: 'var(--color-on-surface)', letterSpacing: '0.05em' }}>{op.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="w-full my-4" style={{ height: '2px', backgroundColor: 'var(--color-outline-variant)' }} />
-                    <div className="w-full rounded-md py-2 text-center" style={{ border: '1px dashed var(--color-outline-variant)', fontFamily: 'var(--font-mono)', color: 'var(--color-outline)', fontSize: '0.875rem' }}>
-                      Answer Here
-                    </div>
-                  </>
-                )}
-              </div>
+              <QuestionPreview
+                questionType={multiplayerConfig.questionType as QuestionType}
+                sampleOperands={sampleOperands}
+              />
             </div>
 
             <div className="card p-6">
@@ -409,7 +282,7 @@ export default memo(function MultiplayerHome() {
               </div>
 
               {error && (
-                <p className="mt-4 text-sm text-center" style={{ color: 'var(--color-status-error)' }}>
+                <p role="alert" className="mt-4 text-sm text-center" style={{ color: 'var(--color-status-error)' }}>
                   {error}
                 </p>
               )}

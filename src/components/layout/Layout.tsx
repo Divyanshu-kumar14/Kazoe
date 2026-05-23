@@ -20,12 +20,20 @@ export function Layout() {
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-on-surface)' }}>
       
+      {/* ─── Skip to content link ─── */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-primary focus:text-on-primary focus:text-sm focus:font-bold focus:no-underline"
+      >
+        Skip to content
+      </a>
+
       {/* ─── Top Navigation Bar ─── */}
       {!isTestSession && (
         <header
-          className="sticky top-0 z-50 backdrop-blur-md"
+          className="fixed top-4 left-4 right-4 z-[var(--z-nav)] backdrop-blur-md rounded-xl"
           style={{
-            borderBottom: '1px solid var(--color-outline-variant)',
+            border: '1px solid var(--color-outline-variant)',
             backgroundColor: theme === 'dark' ? 'rgba(18,18,18,0.92)' : 'rgba(252,249,244,0.92)',
           }}
         >
@@ -36,6 +44,8 @@ export function Layout() {
               <span
                 className="material-symbols-outlined"
                 style={{ fontSize: '28px', color: 'var(--color-primary)', fontVariationSettings: "'FILL' 1" }}
+                role="img"
+                aria-hidden="true"
               >
                 grid_view
               </span>
@@ -89,7 +99,7 @@ export function Layout() {
                 }}
                 aria-label="Toggle theme"
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }} role="img" aria-hidden="true">
                   {theme === 'dark' ? 'light_mode' : 'dark_mode'}
                 </span>
               </button>
@@ -103,7 +113,7 @@ export function Layout() {
                 }}
                 aria-label="Settings"
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }} role="img" aria-hidden="true">
                   settings
                 </span>
               </button>
@@ -111,31 +121,35 @@ export function Layout() {
           </div>
 
           {/* Mobile nav */}
-          <nav className="flex md:hidden items-center gap-1 px-4 pb-2 overflow-x-auto">
-            {NAV_LINKS.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                end={link.to === '/'}
-                className={({ isActive }) =>
-                  `px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors no-underline ${
-                    isActive ? 'font-bold' : ''
-                  }`
-                }
-                style={({ isActive }) => ({
-                  color: isActive ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)',
-                  backgroundColor: isActive ? 'var(--color-surface-container)' : 'transparent',
-                })}
-              >
-                {link.label}
-              </NavLink>
-            ))}
-          </nav>
+          <div className="md:hidden relative">
+            <nav className="flex items-center gap-2 px-4 pb-3 overflow-x-auto snap-x snap-mandatory scroll-pl-4 [-webkit-overflow-scrolling:touch]">
+              {NAV_LINKS.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  end={link.to === '/'}
+                  className={({ isActive }) =>
+                    `px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors no-underline snap-start ${
+                      isActive ? 'font-bold' : ''
+                    }`
+                  }
+                  style={({ isActive }) => ({
+                    color: isActive ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)',
+                    backgroundColor: isActive ? 'var(--color-surface-container)' : 'transparent',
+                  })}
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+            </nav>
+            {/* Fade edge indicator for scrollability */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[var(--color-surface)]/80 to-transparent" />
+          </div>
         </header>
       )}
 
       {/* ─── Main Content ─── */}
-      <main className="flex-1 flex flex-col">
+      <main id="main-content" className={`flex-1 flex flex-col ${!isTestSession ? 'pt-20 max-md:pt-24' : ''}`}>
         <Outlet />
       </main>
 
