@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef, memo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useNavigate } from 'react-router-dom';
 import { useSound } from '../../hooks/useSound';
+import { useGameTimer } from '../../hooks/useGameTimer';
 
 interface CountdownProps {
   onDone: () => void;
@@ -114,8 +115,13 @@ export function TestInterface() {
   const endSession = useAppStore((s) => s.endSession);
   const navigate = useNavigate();
 
+  const handleTimeUp = useCallback(() => {
+    endSession();
+    navigate('/practice/results', { replace: true });
+  }, [endSession, navigate]);
+
   const [phase, setPhase] = useState<'countdown' | 'playing' | 'paused'>('countdown');
-  const [timeLeft, setTimeLeft] = useState(timeLimitSeconds);
+  const { timeLeft } = useGameTimer(timeLimitSeconds, phase, handleTimeUp);
   const [inputVal, setInputVal] = useState('');
   const [shakeKey, setShakeKey] = useState(0);
   const [flashKey, setFlashKey] = useState(0);
@@ -138,33 +144,14 @@ export function TestInterface() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    if (phase !== 'playing') {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      return;
-    }
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => Math.max(0, prev - 1));
-    }, 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [phase]);
+  // Remove local timerRef and useEffect that duplicates useGameTimer
+  // and the sessionStatus effect since we navigate on TimeUp and Submit
 
   useEffect(() => {
     if (sessionStatus === 'finished') {
       navigate('/practice/results', { replace: true });
-      return;
     }
-    if (phase === 'playing' && timeLeft <= 0) {
-      endSession();
-    }
-  }, [timeLeft, phase, sessionStatus, endSession, navigate]);
+  }, [sessionStatus, navigate]);
 
   const triggerShake = useCallback(() => {
     if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
@@ -499,6 +486,7 @@ export function TestInterface() {
                 type="number"
                 inputMode="numeric"
                 value={inputVal}
+                aria-label="Your Answer"
                 onChange={(e) => { setInputVal(e.target.value); inputValRef.current = e.target.value; }}
                 onKeyDown={handleKeyDown}
                 placeholder="?"

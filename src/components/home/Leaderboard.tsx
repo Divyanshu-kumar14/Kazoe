@@ -3,36 +3,31 @@ import { getLeaderboard, type Profile } from '../../lib/profile';
 import { useMultiplayerStore } from '../../store/useMultiplayerStore';
 
 export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore: number }) {
-  const [{ leaderboard, isLoading }, setState] = useState<{ leaderboard: Profile[], isLoading: boolean }>({
-    leaderboard: [],
-    isLoading: true
-  });
+  const [leaderboard, setLeaderboard] = useState<Profile[] | null>(null);
   const currentUserId = useMultiplayerStore((s) => s.userId);
   const currentUsername = useMultiplayerStore((s) => s.username);
 
   useEffect(() => {
     let mounted = true;
-    async function load() {
-      const result = await getLeaderboard(50);
+    getLeaderboard(50).then((result) => {
       if (mounted) {
-        setState({ leaderboard: result.data ?? [], isLoading: false });
+        setLeaderboard(result.data ?? []);
       }
-    }
-    load();
+    });
     return () => {
       mounted = false;
     };
   }, []);
 
   const displayData = useMemo(() => {
-    if (isLoading) return { displayPlayers: [], userRankStr: '-', actualRank: -1 };
+    if (leaderboard === null) return { displayPlayers: [], userRankStr: '-', actualRank: -1 };
 
     const players = [...leaderboard];
     let userRank = -1;
     let userInTop = false;
 
     for (let i = 0; i < players.length; i++) {
-      if (players[i].id === currentUserId) {
+      if (players[i]!.id === currentUserId) {
         userRank = i + 1;
         userInTop = true;
         break;
@@ -60,9 +55,9 @@ export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore:
       displayPlayers = [
         ...players.slice(0, 3),
         { id: 'ellipsis', username: '...', points: -1 } as Profile,
-        players[userRank - 2],
-        players[userRank - 1],
-      ].filter(Boolean);
+        players[userRank - 2]!,
+        players[userRank - 1]!,
+      ].filter(Boolean) as Profile[];
     }
 
     return {
@@ -70,7 +65,7 @@ export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore:
       userRankStr: userRank > 0 ? userRankStr : '-',
       actualRank: userRank
     };
-  }, [leaderboard, isLoading, currentUserId, currentUsername, userScore]);
+  }, [leaderboard, currentUserId, currentUsername, userScore]);
 
   return (
     <div className="card p-6 flex flex-col gap-4 h-full">
@@ -99,7 +94,7 @@ export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore:
       </p>
 
       <div className="flex flex-col gap-2 mt-2">
-        {isLoading ? (
+        {leaderboard === null ? (
           <div className="text-sm text-center py-4 text-gray-500">Loading leaderboard&hellip;</div>
         ) : displayData.displayPlayers.length === 0 ? (
           <div className="text-sm text-center py-4 text-gray-500">No data available</div>

@@ -212,7 +212,7 @@ export const useAppStore = create<AppStore>((set, get) => {
     finishedAt: number
   ) {
     const levelConfig = {
-      ...SOROBAN_LEVELS[state.practiceConfig.level],
+      ...SOROBAN_LEVELS[state.practiceConfig.level]!,
       ...state.practiceConfig.overrides,
     };
     const result = computeSessionResult(
@@ -290,7 +290,7 @@ export const useAppStore = create<AppStore>((set, get) => {
       const { practiceConfig } = get();
       const seed = generateSeed();
       const config = {
-        ...SOROBAN_LEVELS[practiceConfig.level],
+        ...SOROBAN_LEVELS[practiceConfig.level]!,
         ...practiceConfig.overrides,
       };
       const maxQuestions = Math.max(50, Math.ceil(practiceConfig.timeLimitSeconds * 2));

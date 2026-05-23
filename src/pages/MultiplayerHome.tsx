@@ -66,11 +66,11 @@ export default memo(function MultiplayerHome() {
     []
   );
 
-  const currentLevelConfig = SOROBAN_LEVELS[multiplayerConfig.level];
+  const currentLevelConfig = SOROBAN_LEVELS[multiplayerConfig.level]!;
 
   const sampleOperands = useMemo(() => {
     if (multiplayerConfig.questionType === 'multiplication' || multiplayerConfig.questionType === 'division') {
-      const cfg = SOROBAN_LEVELS[multiplayerConfig.level];
+      const cfg = SOROBAN_LEVELS[multiplayerConfig.level]!;
       const q = generateQuestion(cfg, { operations: multiplayerConfig.questionType });
       return [
         { sign: '', value: q.operands[0] },
@@ -273,6 +273,7 @@ export default memo(function MultiplayerHome() {
                 step={0.5}
                 value={multiplayerConfig.timeLimitSeconds / 60}
                 onChange={(e) => setMultiplayerConfig({ timeLimitSeconds: Math.round(Number(e.target.value) * 60) })}
+                aria-label="Match Duration in Minutes"
                 className="w-full accent-[var(--color-primary)]"
               />
               <div className="flex justify-between text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>
@@ -390,6 +391,7 @@ export default memo(function MultiplayerHome() {
                         if (val.length <= 7) setRoomCode(val);
                       }}
                       placeholder="XXX-XXX"
+                      aria-label="Room Code"
                       className="input-field text-center text-2xl tracking-widest"
                       style={{ fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}
                       maxLength={7}

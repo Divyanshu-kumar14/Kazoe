@@ -1,7 +1,7 @@
 import type { Grade } from './grading';
 import type { HistoryEntry, MultiplayerHistoryEntry } from '../store/useAppStore';
 
-export const RANKS = [
+const RANKS = [
   { name: 'Beginner',     minPts: 0,    icon: 'kid_star',     color: '#78909c' },
   { name: 'Novice',       minPts: 100,  icon: 'star_half',    color: '#26a69a' },
   { name: 'Apprentice',   minPts: 300,  icon: 'star',         color: '#42a5f5' },
@@ -43,15 +43,15 @@ export interface MultiplayerStats {
 
 export function getRank(points: number) {
   for (let i = RANKS.length - 1; i >= 0; i--) {
-    if (points >= RANKS[i].minPts) return { ...RANKS[i], index: i };
+    if (points >= RANKS[i]!.minPts) return { ...RANKS[i]!, index: i };
   }
-  return { ...RANKS[0], index: 0 };
+  return { ...RANKS[0]!, index: 0 };
 }
 
 export function getNextRank(points: number) {
   const currentIdx = getRank(points).index;
   if (currentIdx >= RANKS.length - 1) return null;
-  return RANKS[currentIdx + 1];
+  return RANKS[currentIdx + 1]!;
 }
 
 export function computeStats(history: HistoryEntry[], multiplayerHistory: MultiplayerHistoryEntry[]): DashboardStats {
@@ -108,8 +108,8 @@ export function computeStats(history: HistoryEntry[], multiplayerHistory: Multip
     bestStreak,
     totalPoints,
     totalTimeMinutes: Math.round(totalTimeSeconds / 60),
-    bestGrade: gradeOrder[bestGradeIdx],
-    recentLevel: history.length > 0 ? history[history.length - 1].level : 1,
+    bestGrade: gradeOrder[bestGradeIdx]!,
+    recentLevel: history.length > 0 ? history[history.length - 1]!.level : 1,
     todaySessions,
     todayCorrect,
     todayAttempted,

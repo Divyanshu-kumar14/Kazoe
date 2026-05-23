@@ -105,7 +105,7 @@ export const MULT_DIFFICULTY: Record<number, MultDifficultyEntry> = {
 
 function generateMultiplicationQuestion(config: LevelConfig, rng: () => number): Question {
   const level = Math.max(1, Math.min(10, config.level));
-  const difficulty = MULT_DIFFICULTY[level];
+  const difficulty = MULT_DIFFICULTY[level]!;
   const multiplicand = Math.floor(rng() * (difficulty.multiplicandMax - difficulty.multiplicandMin + 1)) + difficulty.multiplicandMin;
   const multiplier = Math.floor(rng() * (difficulty.multiplierMax - difficulty.multiplierMin + 1)) + difficulty.multiplierMin;
   return { operands: [multiplicand, multiplier], answer: multiplicand * multiplier, seed: '', operation: 'multiplication' };
@@ -150,7 +150,7 @@ export const DIV_DIFFICULTY: Record<number, DivDifficultyEntry> = {
 
 function generateDivisionQuestion(config: LevelConfig, rng: () => number): Question {
   const level = Math.max(1, Math.min(10, config.level));
-  const difficulty = DIV_DIFFICULTY[level];
+  const difficulty = DIV_DIFFICULTY[level]!;
   const divisor = Math.floor(rng() * (difficulty.divisorMax - difficulty.divisorMin + 1)) + difficulty.divisorMin;
   const quotientMin = Math.max(2, Math.ceil(difficulty.dividendMin / divisor));
   const quotientMax = Math.max(quotientMin, Math.floor(difficulty.dividendMax / divisor));

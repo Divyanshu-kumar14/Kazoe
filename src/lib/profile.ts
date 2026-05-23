@@ -33,27 +33,6 @@ export async function getProfile(userId: string): Promise<ProfileResult<Profile 
   return { data: data as Profile };
 }
 
-/**
- * Create or update a user's profile using the secure server-side RPC.
- * The RPC enforces auth.uid() = id, preventing impersonation.
- */
-export async function setProfileUsername(username: string): Promise<ProfileResult<{ id: string; username: string }>> {
-  const supabase = getSupabase();
-  if (!supabase) return { error: 'Supabase not configured' };
-
-  const { data, error } = await supabase.rpc('upsert_profile', {
-    p_username: username,
-  });
-
-  if (error) {
-    if (error.code === '23505' || error.message.includes('already taken')) {
-      return { error: 'Username is already taken' };
-    }
-    return { error: error.message };
-  }
-
-  return { data: data as unknown as { id: string; username: string } };
-}
 
 /**
  * Fetch the top players from the leaderboard.

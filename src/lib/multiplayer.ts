@@ -31,7 +31,7 @@ export interface AnswerPayload {
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-export function generateRoomCode(): string {
+function generateRoomCode(): string {
   let code = '';
   const array = new Uint8Array(6);
   crypto.getRandomValues(array);

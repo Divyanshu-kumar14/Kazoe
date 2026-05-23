@@ -39,12 +39,12 @@ export const ConfigPanel = memo(function ConfigPanel() {
     []
   );
 
-  const currentLevelConfig = SOROBAN_LEVELS[level];
+  const currentLevelConfig = SOROBAN_LEVELS[level]!;
 
   // Generate a sample question for preview — uses the real difficulty engine
   const sampleOperands = useMemo(() => {
     if (questionType === 'multiplication' || questionType === 'division') {
-      const cfg = SOROBAN_LEVELS[level];
+      const cfg = SOROBAN_LEVELS[level]!;
       const q = generateQuestion(cfg, { operations: questionType });
       const sym = questionType === 'multiplication' ? '×' : '÷';
       return [

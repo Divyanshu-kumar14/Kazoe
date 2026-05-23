@@ -13,7 +13,7 @@ function randomPieces() {
     pieces.push({
       id: i,
       left: `${Math.random() * 100}%`,
-      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]!,
       delay: `${Math.random() * 1.5}s`,
       duration: `${1.5 + Math.random() * 2}s`,
       size: `${6 + Math.random() * 8}px`,
@@ -80,8 +80,9 @@ export function ResultScreen() {
   const result = useMemo(() => {
     if (!startedAt || !finishedAt) return null;
     const levelConfig = {
-      ...SOROBAN_LEVELS[level],
+      ...SOROBAN_LEVELS[level]!,
       ...overrides,
+      level,
     };
     return computeSessionResult(
       answers,
