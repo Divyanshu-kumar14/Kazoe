@@ -31,12 +31,12 @@ export interface AnswerPayload {
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-export function generateRoomCode(): string {
+function generateRoomCode(): string {
   let code = '';
   const array = new Uint8Array(6);
   crypto.getRandomValues(array);
   for (let i = 0; i < 6; i++) {
-    code += CODE_CHARS[array[i] % CODE_CHARS.length];
+    code += CODE_CHARS[array[i]! % CODE_CHARS.length];
   }
   return code;
 }

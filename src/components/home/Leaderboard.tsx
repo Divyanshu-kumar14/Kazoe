@@ -14,9 +14,11 @@ export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore:
     let mounted = true;
     async function load() {
       setState(prev => ({ ...prev, isLoading: true }));
-      const data = await getLeaderboard(50);
+      const result = await getLeaderboard(50);
       if (mounted) {
-        setState({ leaderboard: data, isLoading: false });
+        // getLeaderboard might return data directly or { data } depending on changes, handle safely
+        const data = result.data ?? result ?? [];
+        setState({ leaderboard: Array.isArray(data) ? data : [], isLoading: false });
       }
     }
     load();
@@ -33,7 +35,7 @@ export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore:
     let userInTop = false;
 
     for (let i = 0; i < players.length; i++) {
-      if (players[i].id === currentUserId) {
+      if (players[i]!.id === currentUserId) {
         userRank = i + 1;
         userInTop = true;
         break;
@@ -61,9 +63,9 @@ export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore:
       displayPlayers = [
         ...players.slice(0, 3),
         { id: 'ellipsis', username: '...', points: -1 } as Profile,
-        players[userRank - 2],
-        players[userRank - 1],
-      ].filter(Boolean);
+        players[userRank - 2]!,
+        players[userRank - 1]!,
+      ].filter(Boolean) as Profile[];
     }
 
     return {

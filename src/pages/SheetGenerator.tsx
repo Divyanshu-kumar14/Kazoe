@@ -1,12 +1,9 @@
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useReducer, useMemo, useCallback } from 'react';
 import { SOROBAN_LEVELS } from '../utils/levelConfig';
 import { generateQuestion } from '../utils/questionGenerator';
-
-type QuestionType = 'add_sub' | 'multiplication' | 'division';
-
-function getOpSymbol(type: QuestionType) {
-  return type === 'multiplication' ? '×' : type === 'division' ? '÷' : '+';
-}
+import { type QuestionType, type SheetQuestion, getOpSymbol } from '../components/sheet/types';
+import { SheetPrintPages } from '../components/sheet/SheetPrintPages';
+import { SheetAnswerKey } from '../components/sheet/SheetAnswerKey';
 
 const QUESTION_TYPE_OPTIONS: { value: QuestionType; label: string; icon: string }[] = [
   { value: 'add_sub', label: 'Add / Sub', icon: 'add' },
@@ -14,31 +11,60 @@ const QUESTION_TYPE_OPTIONS: { value: QuestionType; label: string; icon: string 
   { value: 'division', label: 'Division', icon: 'percent' },
 ];
 
-interface SheetQuestion {
-  operands: number[];
-  answer: number;
-  operation: QuestionType;
+type SheetState = {
+  level: number;
+  questionCount: number;
+  columns: number;
+  rowOverride?: number;
+  questionType: QuestionType;
+  questions: SheetQuestion[];
+  showAnswers: boolean;
+};
+
+type SheetAction =
+  | { type: 'SET_LEVEL'; payload: number }
+  | { type: 'SET_QUESTION_COUNT'; payload: number }
+  | { type: 'SET_COLUMNS'; payload: number }
+  | { type: 'SET_ROW_OVERRIDE'; payload: number | undefined }
+  | { type: 'SET_QUESTION_TYPE'; payload: QuestionType }
+  | { type: 'SET_QUESTIONS'; payload: SheetQuestion[] }
+  | { type: 'TOGGLE_SHOW_ANSWERS' }
+  | { type: 'SET_SHOW_ANSWERS'; payload: boolean };
+
+function sheetReducer(state: SheetState, action: SheetAction): SheetState {
+  switch (action.type) {
+    case 'SET_LEVEL': return { ...state, level: action.payload };
+    case 'SET_QUESTION_COUNT': return { ...state, questionCount: action.payload };
+    case 'SET_COLUMNS': return { ...state, columns: action.payload };
+    case 'SET_ROW_OVERRIDE': return { ...state, rowOverride: action.payload };
+    case 'SET_QUESTION_TYPE': return { ...state, questionType: action.payload };
+    case 'SET_QUESTIONS': return { ...state, questions: action.payload };
+    case 'TOGGLE_SHOW_ANSWERS': return { ...state, showAnswers: !state.showAnswers };
+    case 'SET_SHOW_ANSWERS': return { ...state, showAnswers: action.payload };
+    default: return state;
+  }
 }
 
-export default memo(function SheetGenerator() {
-  const [level, setLevel] = useState(10);
-  const [questionCount, setQuestionCount] = useState(20);
-  const [columns, setColumns] = useState(4);
-  const [rowOverride, setRowOverride] = useState<number | undefined>(undefined);
-  const [questionType, setQuestionType] = useState<QuestionType>('add_sub');
-  const [questions, setQuestions] = useState<SheetQuestion[]>([]);
-  const [showAnswers, setShowAnswers] = useState(false);
+export default function SheetGenerator() {
+  const [state, dispatch] = useReducer(sheetReducer, {
+    level: 10,
+    questionCount: 20,
+    columns: 4,
+    rowOverride: undefined,
+    questionType: 'add_sub',
+    questions: [],
+    showAnswers: false,
+  });
 
-  const levelConfig = SOROBAN_LEVELS[level];
+  const { level, questionCount, columns, rowOverride, questionType, questions, showAnswers } = state;
+
+  const levelConfig = SOROBAN_LEVELS[level]!;
   const levels = useMemo(
     () => Object.keys(SOROBAN_LEVELS).map(Number).sort((a, b) => b - a),
     []
   );
 
   const isMultDiv = questionType === 'multiplication' || questionType === 'division';
-
-  const PER_PAGE = isMultDiv ? 10 : 4;
-  const ROWS = 2;
 
   const pages = useMemo(() => {
     const perPage = isMultDiv ? 10 : 4;
@@ -51,8 +77,8 @@ export default memo(function SheetGenerator() {
 
   const answerPages = useMemo(() => {
     const answersPerPage = 20;
-    const result: { idx: number; answer: number }[][] = [];
-    const allAnswers = questions.map((q, i) => ({ idx: i, answer: q.answer }));
+    const result: { qId: number; answer: number }[][] = [];
+    const allAnswers = questions.map((q, i) => ({ qId: i, answer: q.answer }));
     for (let i = 0; i < allAnswers.length; i += answersPerPage) {
       result.push(allAnswers.slice(i, i + answersPerPage));
     }
@@ -71,9 +97,9 @@ export default memo(function SheetGenerator() {
       const q = generateQuestion(levelConfig, overrides);
       qs.push({ ...q, operation: questionType });
     }
-    setQuestions(qs);
-    setShowAnswers(false);
-  }, [questionCount, levelConfig, rowOverride, questionType]);
+    dispatch({ type: 'SET_QUESTIONS', payload: qs });
+    dispatch({ type: 'SET_SHOW_ANSWERS', payload: false });
+  }, [levelConfig, questionCount, questionType, rowOverride]);
 
   const handlePrint = () => {
     window.print();
@@ -84,18 +110,10 @@ export default memo(function SheetGenerator() {
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col gap-6 sm:gap-8">
         
         <div className="sheet-no-print">
-          <h1
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
-              fontWeight: 600,
-              color: 'var(--color-on-surface)',
-              margin: 0,
-            }}
-          >
+          <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] font-semibold text-on-surface m-0">
             Sheet Generator
           </h1>
-          <p className="mt-2" style={{ color: 'var(--color-on-surface-variant)', fontSize: '1.125rem' }}>
+          <p className="mt-2 text-on-surface-variant text-lg">
             Generate printable practice sheets for offline drills.
           </p>
         </div>
@@ -104,24 +122,16 @@ export default memo(function SheetGenerator() {
           <span className="label-caps">Question Type</span>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {QUESTION_TYPE_OPTIONS.map((opt) => (
-              <button
+              <button type="button"
                 key={opt.value}
-                onClick={() => setQuestionType(opt.value)}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all"
-                style={{
-                  border: questionType === opt.value
-                    ? '2px solid var(--color-primary)'
-                    : '1px solid var(--color-outline-variant)',
-                  backgroundColor: questionType === opt.value
-                    ? 'var(--color-primary)'
-                    : 'var(--color-surface-container-low)',
-                  color: questionType === opt.value
-                    ? 'var(--color-on-primary)'
-                    : 'var(--color-on-surface)',
-                  cursor: 'pointer',
-                }}
+                onClick={() => dispatch({ type: 'SET_QUESTION_TYPE', payload: opt.value })}
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all border-2 cursor-pointer ${
+                  questionType === opt.value
+                    ? 'border-primary bg-primary text-on-primary'
+                    : 'border-outline-variant bg-surface-container-low text-on-surface'
+                }`}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{opt.icon}</span>
+                <span className="material-symbols-outlined text-base">{opt.icon}</span>
                 {opt.label}
               </button>
             ))}
@@ -142,7 +152,7 @@ export default memo(function SheetGenerator() {
               id="level-select"
               className="input-field"
               value={level}
-              onChange={(e) => setLevel(Number(e.target.value))}
+              onChange={(e) => dispatch({ type: 'SET_LEVEL', payload: Number(e.target.value) })}
             >
               {levels.map((l) => (
                 <option key={`lvl-${l}`} value={l}>Level {l}</option>
@@ -156,7 +166,7 @@ export default memo(function SheetGenerator() {
               id="question-count-select"
               className="input-field"
               value={questionCount}
-              onChange={(e) => setQuestionCount(Number(e.target.value))}
+              onChange={(e) => dispatch({ type: 'SET_QUESTION_COUNT', payload: Number(e.target.value) })}
             >
               {[10, 20, 30, 40, 50].map((n) => (
                 <option key={`n-${n}`} value={n}>{n}</option>
@@ -172,7 +182,7 @@ export default memo(function SheetGenerator() {
                   id="columns-select"
                   className="input-field"
                   value={columns}
-                  onChange={(e) => setColumns(Number(e.target.value))}
+                  onChange={(e) => dispatch({ type: 'SET_COLUMNS', payload: Number(e.target.value) })}
                 >
                   {[2, 3, 4, 5].map((c) => (
                     <option key={`c-${c}`} value={c}>{c}</option>
@@ -188,7 +198,7 @@ export default memo(function SheetGenerator() {
                   value={rowOverride || ''}
                   onChange={(e) => {
                     const val = e.target.value;
-                    setRowOverride(val ? Number(val) : undefined);
+                    dispatch({ type: 'SET_ROW_OVERRIDE', payload: val ? Number(val) : undefined });
                   }}
                 >
                   <option value="">Default ({levelConfig.rowCount})</option>
@@ -202,20 +212,20 @@ export default memo(function SheetGenerator() {
         </div>
 
         <div className="flex flex-wrap gap-3 sheet-no-print">
-          <button onClick={handleGenerate} className="btn-primary">
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>auto_awesome</span>
+          <button type="button" onClick={handleGenerate} className="btn-primary">
+            <span className="material-symbols-outlined text-lg">auto_awesome</span>
             Generate Sheet
           </button>
           {questions.length > 0 && (
             <>
-              <button onClick={() => setShowAnswers(!showAnswers)} className="btn-secondary">
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              <button type="button" onClick={() => dispatch({ type: 'TOGGLE_SHOW_ANSWERS' })} className="btn-secondary">
+                <span className="material-symbols-outlined text-lg">
                   {showAnswers ? 'visibility_off' : 'visibility'}
                 </span>
                 {showAnswers ? 'Hide Answer Key' : 'Show Answer Key'}
               </button>
-              <button onClick={handlePrint} className="btn-secondary">
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>print</span>
+              <button type="button" onClick={handlePrint} className="btn-secondary">
+                <span className="material-symbols-outlined text-lg">print</span>
                 Print
               </button>
             </>
@@ -232,77 +242,31 @@ export default memo(function SheetGenerator() {
                 {questions.map((q, idx) => (
                   <div
                     key={`mult-q-${q.operands.join('-')}-${q.answer}`}
-                    className="card px-5 py-4 flex items-center gap-4"
-                    style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+                    className="card px-5 py-4 flex items-center gap-4 shadow-sm"
                   >
                     {/* Question number */}
-                    <span
-                      className="label-caps"
-                      style={{
-                        fontSize: '0.75rem',
-                        minWidth: '2rem',
-                        color: 'var(--color-on-surface-variant)',
-                      }}
-                    >
+                    <span className="label-caps text-xs min-w-[2rem] text-on-surface-variant">
                       #{idx + 1}
                     </span>
 
                     {/* Expression */}
                     <div className="flex items-baseline gap-2 flex-1">
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '1.375rem',
-                          fontWeight: 600,
-                          color: 'var(--color-on-surface)',
-                          letterSpacing: '0.03em',
-                        }}
-                      >
+                      <span className="font-mono text-[1.375rem] font-semibold text-on-surface tracking-wide">
                         {q.operands[0]}
                       </span>
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '1rem',
-                          fontWeight: 500,
-                          color: 'var(--color-primary)',
-                        }}
-                      >
+                      <span className="font-mono text-base font-medium text-primary">
                         {getOpSymbol(q.operation)}
                       </span>
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '1.375rem',
-                          fontWeight: 600,
-                          color: 'var(--color-on-surface)',
-                          letterSpacing: '0.03em',
-                        }}
-                      >
+                      <span className="font-mono text-[1.375rem] font-semibold text-on-surface tracking-wide">
                         {q.operands[1]}
                       </span>
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '1rem',
-                          color: 'var(--color-outline)',
-                        }}
-                      >
+                      <span className="font-mono text-base text-outline">
                         =
                       </span>
                     </div>
 
                     {/* Answer blank */}
-                    <div
-                      className="rounded-md py-1 text-center"
-                      style={{
-                        width: '80px',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '1rem',
-                        color: 'var(--color-outline)',
-                        borderBottom: '2px solid var(--color-outline-variant)',
-                      }}
-                    >
+                    <div className="w-[80px] rounded-md py-1 text-center font-mono text-base text-outline border-b-2 border-outline-variant">
                       &nbsp;
                     </div>
                   </div>
@@ -317,11 +281,10 @@ export default memo(function SheetGenerator() {
                 {questions.map((q, idx) => (
                   <div
                     key={`sheet-q-${q.operands.join('-')}-ans${q.answer}`}
-                    className="card p-4 flex flex-col items-center"
-                    style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+                    className="card p-4 flex flex-col items-center shadow-sm"
                   >
                     {/* Question number */}
-                    <span className="label-caps mb-2" style={{ alignSelf: 'start', fontSize: '0.75rem' }}>
+                    <span className="label-caps mb-2 self-start text-xs">
                       #{idx + 1}
                     </span>
 
@@ -330,53 +293,23 @@ export default memo(function SheetGenerator() {
                       {q.operands.map((op, opIdx) => {
                         const rowKey = q.operands.slice(0, opIdx + 1).join('-');
                         return (
-                        <div key={`sheet-op-${rowKey}`} className="flex items-baseline gap-2">
-                          <span
-                            style={{
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '0.875rem',
-                              color: 'var(--color-on-surface-variant)',
-                              width: '1rem',
-                              textAlign: 'right',
-                            }}
-                          >
-                            {opIdx === 0 ? '' : op < 0 ? '−' : '+'}
-                          </span>
-                          <span
-                            style={{
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '1.5rem',
-                              fontWeight: 500,
-                              color: 'var(--color-on-surface)',
-                              letterSpacing: '0.05em',
-                            }}
-                          >
-                            {Math.abs(op)}
-                          </span>
-                        </div>
+                          <div key={`sheet-op-${rowKey}`} className="flex items-baseline gap-2">
+                            <span className="font-mono text-sm text-on-surface-variant w-4 text-right">
+                              {opIdx === 0 ? '' : op < 0 ? '−' : '+'}
+                            </span>
+                            <span className="font-mono text-2xl font-medium text-on-surface tracking-wide">
+                              {Math.abs(op)}
+                            </span>
+                          </div>
                         );
                       })}
                     </div>
 
                     {/* Divider */}
-                    <div
-                      className="w-full my-2"
-                      style={{ height: '1.5px', backgroundColor: 'var(--color-on-surface)' }}
-                    />
+                    <div className="w-full my-2 h-[1.5px] bg-on-surface" />
 
                     {/* Answer area — always blank on screen */}
-                    <div
-                      className="w-full rounded-md py-1.5 text-center"
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '1.25rem',
-                        fontWeight: 500,
-                        letterSpacing: '0.05em',
-                        color: 'var(--color-outline)',
-                        border: '1px dashed var(--color-outline-variant)',
-                        backgroundColor: 'transparent',
-                      }}
-                    >
+                    <div className="w-full rounded-md py-1.5 text-center font-mono text-xl font-medium tracking-wide text-outline border border-dashed border-outline-variant bg-transparent">
                       &nbsp;
                     </div>
                   </div>
@@ -384,356 +317,33 @@ export default memo(function SheetGenerator() {
               </div>
             )}
 
-            {showAnswers && (
-              <div className="sheet-no-print flex flex-col gap-4">
-                <div
-                  className="flex items-center gap-3"
-                  style={{ padding: '0 0.25rem' }}
-                >
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: '24px', color: 'var(--color-primary)' }}
-                  >
-                    key
-                  </span>
-                  <h2
-                    style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '1.375rem',
-                      fontWeight: 600,
-                      color: 'var(--color-on-surface)',
-                      margin: 0,
-                    }}
-                  >
-                    Answer Key
-                  </h2>
-                </div>
+            <SheetAnswerKey
+              showAnswers={showAnswers}
+              questions={questions}
+              answerPages={answerPages}
+              pagesLength={pages.length}
+              level={level}
+            />
 
-                <div className="card overflow-x-auto">
-                  <div style={{ minWidth: '600px', display: 'flex', flexDirection: 'column' }}>
-                    {/* Table header */}
-                    <div
-                      style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(5, 1fr)',
-                      borderBottom: '1px solid var(--color-outline-variant)',
-                      backgroundColor: 'var(--color-surface-container)',
-                    }}
-                  >
-                    {Array.from({ length: 5 }).map((_, i) => {
-                      const colKey = `header-col-${i}`;
-                      return (
-                      <div
-                        key={colKey}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: '2.5rem 1fr',
-                          padding: '0.625rem 1rem',
-                          borderRight: i < 4 ? '1px solid var(--color-outline-variant)' : 'none',
-                        }}
-                      >
-                        <span style={{
-                          fontFamily: 'var(--font-body)',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          letterSpacing: '0.05em',
-                          textTransform: 'uppercase',
-                          color: 'var(--color-on-surface-variant)',
-                        }}>
-                          #
-                        </span>
-                        <span style={{
-                          fontFamily: 'var(--font-body)',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          letterSpacing: '0.05em',
-                          textTransform: 'uppercase',
-                          color: 'var(--color-on-surface-variant)',
-                          textAlign: 'right',
-                        }}>
-                          Ans
-                        </span>
-                      </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Table rows — chunk into groups of 5 for table layout */}
-                  <div>
-                    {Array.from({ length: Math.ceil(questions.length / 5) }).map((_, rowIdx) => {
-                      const rowKey = `ans-row-${rowIdx}`;
-                      return (
-                      <div
-                        key={rowKey}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(5, 1fr)',
-                          borderBottom: rowIdx < Math.ceil(questions.length / 5) - 1
-                            ? '1px solid var(--color-outline-variant)'
-                            : 'none',
-                        }}
-                      >
-                        {Array.from({ length: 5 }).map((_, colIdx) => {
-                          const qIdx = rowIdx * 5 + colIdx;
-                          if (qIdx >= questions.length) {
-                            return (
-                          <div
-                            key={`empty-${colIdx}-${rowIdx}`}
-                            style={{
-                              padding: '0.75rem 1rem',
-                              borderRight: colIdx < 4 ? '1px solid var(--color-outline-variant)' : 'none',
-                            }}
-                          />
-                            );
-                          }
-                        return (
-                          <div
-                            key={`cell-${colIdx}-${qIdx}`}
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: '2.5rem 1fr',
-                                alignItems: 'center',
-                                padding: '0.75rem 1rem',
-                                borderRight: colIdx < 4 ? '1px solid var(--color-outline-variant)' : 'none',
-                                backgroundColor: rowIdx % 2 === 0
-                                  ? 'transparent'
-                                  : 'var(--color-surface-container-low)',
-                              }}
-                            >
-                              <span style={{
-                                fontFamily: 'var(--font-body)',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                color: 'var(--color-on-surface-variant)',
-                              }}>
-                                Q{qIdx + 1}
-                              </span>
-                              <span style={{
-                                fontFamily: 'var(--font-mono)',
-                                fontSize: '1.0625rem',
-                                fontWeight: 600,
-                                color: 'var(--color-primary)',
-                                textAlign: 'right',
-                              }}>
-                                {questions[qIdx].answer}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-            )}
-
-            <div className="sheet-print-pages">
-              {pages.map((pageQuestions, pageIdx) => (
-                <div key={`page-${pageIdx}`} className="sheet-page">
-                  <div className="sheet-page-header">
-                    <div className="sheet-page-title">
-                      {isMultDiv
-                        ? `${questionType === 'multiplication' ? 'Multiplication' : 'Division'} Practice Sheet`
-                        : 'Abacus Practice Sheet'}
-                    </div>
-                    <div className="sheet-page-meta">
-                      <span>Level {level}</span>
-                      <span className="sheet-page-fields">
-                        Name: __________________ &nbsp;&nbsp;&nbsp; Date: __________
-                      </span>
-                    </div>
-                  </div>
-
-                  {isMultDiv ? (
-                    /* ── Mult/Div print: list of horizontal expressions ── */
-                    <div
-                      style={{
-                        flex: 1,
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(2, 1fr)',
-                        gap: '0',
-                        padding: '8mm 4mm',
-                      }}
-                    >
-                      {pageQuestions.map((q, qIdx) => {
-                        const globalIdx = pageIdx * (isMultDiv ? 10 : 4) + qIdx;
-                        return (
-                          <div
-                            key={`q-${globalIdx}`}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '3mm',
-                              padding: '5mm 6mm',
-                              borderBottom: '0.5pt solid #ddd',
-                            }}
-                          >
-                            {/* Q number */}
-                            <span
-                              style={{
-                                fontFamily: 'monospace',
-                                fontSize: '10pt',
-                                fontWeight: 600,
-                                color: '#888',
-                                minWidth: '24pt',
-                              }}
-                            >
-                              Q{globalIdx + 1}.
-                            </span>
-
-                            {/* Expression */}
-                            <span
-                              style={{
-                                fontFamily: 'monospace',
-                                fontSize: '14pt',
-                                fontWeight: 600,
-                                letterSpacing: '0.03em',
-                              }}
-                            >
-                              {q.operands[0]}
-                            </span>
-                            <span
-                              style={{
-                                fontFamily: 'monospace',
-                                fontSize: '12pt',
-                                fontWeight: 500,
-                                color: '#555',
-                              }}
-                            >
-                              {getOpSymbol(q.operation)}
-                            </span>
-                            <span
-                              style={{
-                                fontFamily: 'monospace',
-                                fontSize: '14pt',
-                                fontWeight: 600,
-                                letterSpacing: '0.03em',
-                              }}
-                            >
-                              {q.operands[1]}
-                            </span>
-                            <span
-                              style={{
-                                fontFamily: 'monospace',
-                                fontSize: '12pt',
-                                color: '#888',
-                              }}
-                            >
-                              =
-                            </span>
-
-                            {/* Answer line */}
-                            <div
-                              style={{
-                                flex: 1,
-                                borderBottom: '1.5pt solid #ccc',
-                                minWidth: '40pt',
-                                height: '16pt',
-                              }}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    /* ── Add/Sub print: 2×2 question grid ── */
-                    <div
-                      className="sheet-page-grid"
-                      style={{
-                        gridTemplateColumns: `repeat(${columns}, 1fr)`,
-                        gridTemplateRows: `repeat(${ROWS}, 1fr)`,
-                      }}
-                    >
-                      {pageQuestions.map((q, qIdx) => {
-                        const globalIdx = pageIdx * PER_PAGE + qIdx;
-                        return (
-                          <div key={`q-${globalIdx}`} className="sheet-question-cell">
-                            <div className="sheet-q-number">Q{globalIdx + 1}</div>
-                            <div className="sheet-operands">
-                              {q.operands.map((op, i) => {
-                                const opKey = `op-${globalIdx}-${i}-${op}`;
-                                return (
-                                <div key={opKey} className="sheet-operand-row">
-                                  <span className="sheet-op-sign">
-                                    {i === 0 ? '' : op < 0 ? '−' : '+'}
-                                  </span>
-                                  <span className="sheet-op-value">
-                                    {Math.abs(op)}
-                                  </span>
-                                </div>
-                                );
-                              })}
-                            </div>
-                            <div className="sheet-divider" />
-                            <div className="sheet-answer-blank" />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Page footer */}
-                  <div className="sheet-page-footer">
-                    <span>kazoe.app</span>
-                    <span>Page {pageIdx + 1} of {pages.length + (showAnswers ? answerPages.length : 0)}</span>
-                  </div>
-                </div>
-              ))}
-
-              {/* ANSWER KEY PAGES — at the very end */}
-              {showAnswers && answerPages.map((pageAnswers, apIdx) => (
-                <div key={`ans-${apIdx}`} className="sheet-page">
-                  <div className="sheet-page-header">
-                    <div className="sheet-page-title">Answer Key</div>
-                    <div className="sheet-page-meta">
-                      <span>Level {level}</span>
-                      {answerPages.length > 1 && (
-                        <span>Sheet {apIdx + 1} of {answerPages.length}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="sheet-answer-key-grid">
-                    {pageAnswers.map(({ idx, answer }) => (
-                      <div key={`ans-${idx}`} className="sheet-answer-entry">
-                        <span className="sheet-answer-label">Q{idx + 1}</span>
-                        <span className="sheet-answer-value">{answer}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="sheet-page-footer">
-                    <span>kazoe.app</span>
-                    <span>Page {pages.length + apIdx + 1} of {pages.length + answerPages.length}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <SheetPrintPages
+              pages={pages}
+              isMultDiv={isMultDiv}
+              questionType={questionType}
+              level={level}
+              columns={columns}
+              showAnswers={showAnswers}
+              answerPagesLength={answerPages.length}
+            />
           </>
         )}
 
         {/* Empty state */}
         {questions.length === 0 && (
-          <div
-            className="card p-12 flex flex-col items-center justify-center gap-4 text-center"
-            style={{
-              backgroundColor: 'var(--color-surface-container-low)',
-              border: '1px dashed var(--color-outline-variant)',
-              minHeight: '200px',
-            }}
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{
-                fontSize: '48px',
-                color: 'var(--color-outline)',
-              }}
-            >
+          <div className="card p-12 flex flex-col items-center justify-center gap-4 text-center bg-surface-container-low border border-dashed border-outline-variant min-h-[200px]">
+            <span className="material-symbols-outlined text-[48px] text-outline">
               note_add
             </span>
-            <p style={{ color: 'var(--color-on-surface-variant)', margin: 0 }}>
+            <p className="text-on-surface-variant m-0">
               Configure your settings above and click <strong>Generate Sheet</strong> to create a practice sheet.
             </p>
           </div>
@@ -741,4 +351,4 @@ export default memo(function SheetGenerator() {
       </div>
     </div>
   );
-});
+}

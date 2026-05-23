@@ -23,9 +23,10 @@ function generateAddSubQuestion(config: LevelConfig, rng: () => number): Questio
   const additionOnly = config.operations === 'addition';
 
   // First operand: positive starting value within digit range
-  // Bias higher for subtraction-heavy configs to ensure room for subtraction
+  // For addition-only, leave room for (rowCount - 1) minimum additions of 1
+  // For subtraction-heavy configs, bias higher to ensure room for subtraction
   const minFirst = additionOnly ? 1 : Math.max(1, Math.floor(maxVal * 0.3));
-  const firstMax = additionOnly ? maxVal - 1 : maxVal;
+  const firstMax = additionOnly ? Math.max(minFirst, maxVal - (config.rowCount - 1)) : maxVal;
   const first = Math.max(minFirst, Math.floor(rng() * Math.max(firstMax, 1)) + 1);
   operands.push(first);
   let runningTotal = first;
@@ -59,10 +60,8 @@ function generateAddSubQuestion(config: LevelConfig, rng: () => number): Questio
       operands.push(-operand);
       runningTotal -= operand;
     } else {
-      // Edge case: can't add (at ceiling) AND can't subtract (addition-only or total=0)
-      // Just add 1 — slightly exceeds digit ceiling but keeps math correct
-      operands.push(1);
-      runningTotal += 1;
+      // Fallback: keep total unchanged (should be unreachable with correct bounds)
+      operands.push(0);
     }
   }
 
@@ -106,7 +105,7 @@ export const MULT_DIFFICULTY: Record<number, MultDifficultyEntry> = {
 
 function generateMultiplicationQuestion(config: LevelConfig, rng: () => number): Question {
   const level = Math.max(1, Math.min(10, config.level));
-  const difficulty = MULT_DIFFICULTY[level];
+  const difficulty = MULT_DIFFICULTY[level]!;
   const multiplicand = Math.floor(rng() * (difficulty.multiplicandMax - difficulty.multiplicandMin + 1)) + difficulty.multiplicandMin;
   const multiplier = Math.floor(rng() * (difficulty.multiplierMax - difficulty.multiplierMin + 1)) + difficulty.multiplierMin;
   return { operands: [multiplicand, multiplier], answer: multiplicand * multiplier, seed: '', operation: 'multiplication' };
@@ -151,7 +150,7 @@ export const DIV_DIFFICULTY: Record<number, DivDifficultyEntry> = {
 
 function generateDivisionQuestion(config: LevelConfig, rng: () => number): Question {
   const level = Math.max(1, Math.min(10, config.level));
-  const difficulty = DIV_DIFFICULTY[level];
+  const difficulty = DIV_DIFFICULTY[level]!;
   const divisor = Math.floor(rng() * (difficulty.divisorMax - difficulty.divisorMin + 1)) + difficulty.divisorMin;
   const quotientMin = Math.max(2, Math.ceil(difficulty.dividendMin / divisor));
   const quotientMax = Math.max(quotientMin, Math.floor(difficulty.dividendMax / divisor));

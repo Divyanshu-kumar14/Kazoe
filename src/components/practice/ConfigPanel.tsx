@@ -39,12 +39,12 @@ export const ConfigPanel = memo(function ConfigPanel() {
     []
   );
 
-  const currentLevelConfig = SOROBAN_LEVELS[level];
+  const currentLevelConfig = SOROBAN_LEVELS[level]!;
 
   // Generate a sample question for preview — uses the real difficulty engine
   const sampleOperands = useMemo(() => {
     if (questionType === 'multiplication' || questionType === 'division') {
-      const cfg = SOROBAN_LEVELS[level];
+      const cfg = SOROBAN_LEVELS[level]!;
       const q = generateQuestion(cfg, { operations: questionType });
       const sym = questionType === 'multiplication' ? '×' : '÷';
       return [
@@ -96,7 +96,7 @@ export const ConfigPanel = memo(function ConfigPanel() {
           {levels.map((lvl) => {
             const isSelected = level === lvl;
             return (
-              <button
+              <button type="button"
                 key={lvl}
                 onClick={() => setConfig({ level: lvl })}
                 className="aspect-square rounded-lg flex items-center justify-center text-xl font-bold transition-all"
@@ -128,7 +128,7 @@ export const ConfigPanel = memo(function ConfigPanel() {
           <span className="label-caps">Question Type</span>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {QUESTION_TYPE_OPTIONS.map((opt) => (
-              <button
+              <button type="button"
                 key={opt.value}
                 onClick={() => setConfig({ questionType: opt.value })}
                 className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all"
@@ -162,6 +162,7 @@ export const ConfigPanel = memo(function ConfigPanel() {
             <span className="label-caps">Duration (Minutes)</span>
             <input
               type="range"
+              aria-label="Duration in minutes"
               min={0.5}
               max={15}
               step={0.5}
@@ -191,6 +192,7 @@ export const ConfigPanel = memo(function ConfigPanel() {
               <span className="label-caps">Rows (Operands)</span>
               <select
                 className="input-field"
+                aria-label="Row count override"
                 value={overrides.rowCount || ''}
                  onChange={(e) => {
                    const val = e.target.value;
@@ -353,7 +355,7 @@ export const ConfigPanel = memo(function ConfigPanel() {
             )}
           </div>
 
-          <button
+          <button type="button"
             onClick={handleStart}
             className="btn-primary w-full justify-center py-3 text-base"
             style={{ fontWeight: 700 }}

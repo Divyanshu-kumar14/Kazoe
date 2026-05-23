@@ -53,10 +53,10 @@ export default memo(function MultiplayerHome() {
   }, [isWaiting, matchId]);
 
   useEffect(() => {
+    const unsub = unsubRef.current;
     return () => {
-      if (unsubRef.current) {
-        unsubRef.current();
-        unsubRef.current = null;
+      if (unsub) {
+        unsub();
       }
     };
   }, []);
@@ -66,11 +66,11 @@ export default memo(function MultiplayerHome() {
     []
   );
 
-  const currentLevelConfig = SOROBAN_LEVELS[multiplayerConfig.level];
+  const currentLevelConfig = SOROBAN_LEVELS[multiplayerConfig.level]!;
 
   const sampleOperands = useMemo(() => {
     if (multiplayerConfig.questionType === 'multiplication' || multiplayerConfig.questionType === 'division') {
-      const cfg = SOROBAN_LEVELS[multiplayerConfig.level];
+      const cfg = SOROBAN_LEVELS[multiplayerConfig.level]!;
       const q = generateQuestion(cfg, { operations: multiplayerConfig.questionType });
       return [
         { sign: '', value: q.operands[0] },
@@ -146,7 +146,7 @@ export default memo(function MultiplayerHome() {
             >
               {matchId!.slice(0, 3)}-{matchId!.slice(3)}
             </div>
-            <button
+            <button type="button"
               onClick={() => navigator.clipboard.writeText(matchId!)}
               className="mt-3 px-4 py-2 rounded-md text-sm font-medium transition-colors"
               style={{
@@ -165,7 +165,7 @@ export default memo(function MultiplayerHome() {
             <p className="text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
               Waiting for opponent to join…
             </p>
-            <button
+            <button type="button"
               onClick={handleCancelRoom}
               className="mt-2 px-4 py-2 text-sm rounded-md transition-colors"
               style={{ color: 'var(--color-status-error)' }}
@@ -218,7 +218,7 @@ export default memo(function MultiplayerHome() {
               {levels.map((lvl) => {
                 const isSelected = multiplayerConfig.level === lvl;
                 return (
-                  <button
+                  <button type="button"
                     key={lvl}
                     onClick={() => setMultiplayerConfig({ level: lvl })}
                     className="aspect-square rounded-lg flex items-center justify-center text-xl font-bold transition-all"
@@ -241,7 +241,7 @@ export default memo(function MultiplayerHome() {
               <span className="label-caps">Question Type</span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {QUESTION_TYPE_OPTIONS.map((opt) => (
-                  <button
+                  <button type="button"
                     key={opt.value}
                     onClick={() => setMultiplayerConfig({ questionType: opt.value })}
                     className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all"
@@ -273,6 +273,7 @@ export default memo(function MultiplayerHome() {
                 step={0.5}
                 value={multiplayerConfig.timeLimitSeconds / 60}
                 onChange={(e) => setMultiplayerConfig({ timeLimitSeconds: Math.round(Number(e.target.value) * 60) })}
+                aria-label="Match Duration in Minutes"
                 className="w-full accent-[var(--color-primary)]"
               />
               <div className="flex justify-between text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>
@@ -342,7 +343,7 @@ export default memo(function MultiplayerHome() {
 
             <div className="card p-6">
               <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-outline-variant)' }}>
-                <button
+                <button type="button"
                   onClick={() => { setTab('create'); setError(null); }}
                   className={`flex-1 py-2.5 text-sm font-medium transition-colors ${tab === 'create' ? 'font-bold' : ''}`}
                   style={{
@@ -352,7 +353,7 @@ export default memo(function MultiplayerHome() {
                 >
                   Create Room
                 </button>
-                <button
+                <button type="button"
                   onClick={() => { setTab('join'); setError(null); }}
                   className={`flex-1 py-2.5 text-sm font-medium transition-colors ${tab === 'join' ? 'font-bold' : ''}`}
                   style={{
@@ -370,7 +371,7 @@ export default memo(function MultiplayerHome() {
                     <p className="text-sm mb-5" style={{ color: 'var(--color-on-surface-variant)' }}>
                       Create a room and share the code with a friend
                     </p>
-                    <button
+                    <button type="button"
                       onClick={handleCreate}
                       disabled={!canPlay || loading}
                       className="btn-primary w-full justify-center"
@@ -390,12 +391,13 @@ export default memo(function MultiplayerHome() {
                         if (val.length <= 7) setRoomCode(val);
                       }}
                       placeholder="XXX-XXX"
+                      aria-label="Room Code"
                       className="input-field text-center text-2xl tracking-widest"
                       style={{ fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}
                       maxLength={7}
                       disabled={loading}
                     />
-                    <button
+                    <button type="button"
                       onClick={handleJoin}
                       disabled={roomCode.replace(/-/g, '').length !== 6 || loading}
                       className="btn-primary w-full justify-center mt-4"

@@ -79,7 +79,7 @@ export function Layout() {
 
             {/* Right section */}
             <div className="flex items-center gap-2">
-              <button
+              <button type="button"
                 onClick={toggleTheme}
                 className="size-9 flex items-center justify-center rounded-full transition-colors icon-btn"
                 style={{
@@ -94,7 +94,7 @@ export function Layout() {
                 </span>
               </button>
 
-              <button
+              <button type="button"
                 className="size-9 flex items-center justify-center rounded-full transition-colors icon-btn"
                 style={{
                   color: 'var(--color-on-surface-variant)',
@@ -163,9 +163,7 @@ export function Layout() {
               © 2024 Kazoe. Precision in every bead.
             </span>
             <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
-              <span>Print Settings</span>
-              <span style={{ color: 'var(--color-outline-variant)' }}>|</span>
-              <span>Terms of Mastery</span>
+              <span>Precision in every bead</span>
             </div>
           </div>
         </footer>

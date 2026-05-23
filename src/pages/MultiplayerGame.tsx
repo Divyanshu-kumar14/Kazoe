@@ -164,18 +164,7 @@ export default memo(function MultiplayerGame() {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  letterSpacing: '0.05em',
-                  color: 'var(--color-on-surface-variant)',
-                  backgroundColor: 'var(--color-surface-container)',
-                  padding: '0.1875rem 0.625rem',
-                  borderRadius: '1rem',
-                }}
-              >
+              <span className="font-mono text-xs font-semibold tracking-wider text-on-surface-variant bg-surface-container px-2.5 py-[0.1875rem] rounded-2xl">
                 # {currentQuestionIndex + 1}
               </span>
             </div>
@@ -237,6 +226,7 @@ export default memo(function MultiplayerGame() {
                     <input
                       ref={inputRef}
                       value={inputValue}
+                      aria-label="Answer input"
                       onChange={(e) => setInputValue(e.target.value.replace(/[^0-9-]/g, ''))}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleSubmit();
@@ -244,20 +234,11 @@ export default memo(function MultiplayerGame() {
                       }}
                       placeholder="?"
                       autoComplete="off"
+                      className="w-full font-mono text-4xl font-semibold tracking-wide bg-surface-container-low border-none rounded-t-lg text-center px-3 py-2 transition-all duration-200"
                       style={{
-                        width: '100%',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '2.25rem',
-                        fontWeight: 600,
-                        letterSpacing: '0.04em',
                         color: inputValue ? 'var(--color-primary)' : 'var(--color-outline)',
-                        backgroundColor: 'var(--color-surface-container-low)',
-                        border: 'none',
                         borderBottom: `3px solid ${inputValue ? 'var(--color-primary)' : 'var(--color-outline-variant)'}`,
-                        borderRadius: '0.5rem 0.5rem 0 0',
-                        textAlign: 'center',
-                        padding: '0.5rem 0.75rem',
-                        transition: 'border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
+
                         caretColor: 'var(--color-primary)',
                       }}
                       onFocus={(e) => {
@@ -339,6 +320,7 @@ export default memo(function MultiplayerGame() {
                     <input
                       ref={inputRef}
                       value={inputValue}
+                      aria-label="Answer input"
                       onChange={(e) => setInputValue(e.target.value.replace(/[^0-9-]/g, ''))}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleSubmit();
@@ -346,21 +328,11 @@ export default memo(function MultiplayerGame() {
                       }}
                       placeholder="?"
                       autoComplete="off"
+                      className="w-full min-w-0 font-mono text-4xl font-medium tracking-wide bg-surface-container-low border-none rounded-t-md text-right px-2.5 py-1.5 transition-all duration-200"
                       style={{
-                        width: '100%',
-                        minWidth: 0,
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '2.25rem',
-                        fontWeight: 500,
-                        letterSpacing: '0.04em',
                         color: inputValue ? 'var(--color-primary)' : 'var(--color-outline)',
-                        backgroundColor: 'var(--color-surface-container-low)',
-                        border: 'none',
                         borderBottom: `2px solid ${inputValue ? 'var(--color-primary)' : 'var(--color-outline-variant)'}`,
-                        borderRadius: '0.375rem 0.375rem 0 0',
-                        textAlign: 'right',
-                        padding: '0.375rem 0.625rem',
-                        transition: 'border-color 0.2s ease, color 0.2s ease',
+
                         caretColor: 'var(--color-primary)',
                       }}
                     />
@@ -383,36 +355,19 @@ export default memo(function MultiplayerGame() {
 
           {matchStatus === 'playing' && (
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
-              <button
+              <button type="button"
                 onClick={handleSkip}
-                style={{
-                  flex: '0 0 auto',
-                  padding: '0.75rem 1.25rem',
-                  color: 'var(--color-on-surface-variant)',
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: 600,
-                  fontSize: '0.875rem',
-                  border: '1px solid var(--color-outline-variant)',
-                  borderRadius: '0.625rem',
-                  cursor: 'pointer',
-                  background: 'var(--color-surface-container)',
-                }}
+                className="flex-none px-5 py-3 text-on-surface-variant font-body font-semibold text-sm border border-outline-variant rounded-[0.625rem] cursor-pointer bg-surface-container"
               >
                 Skip question
               </button>
-              <button
+              <button type="button"
                 onClick={handleSubmit}
                 disabled={inputValue === ''}
+                className="flex-1 px-6 py-3 font-body font-bold text-base border-none rounded-[0.625rem] transition-all"
                 style={{
-                  flex: 1,
-                  padding: '0.75rem 1.5rem',
                   background: inputValue !== '' ? 'var(--color-primary)' : 'var(--color-surface-container-high)',
                   color: inputValue !== '' ? 'var(--color-on-primary)' : 'var(--color-outline)',
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: 700,
-                  fontSize: '1rem',
-                  border: 'none',
-                  borderRadius: '0.625rem',
                   cursor: inputValue !== '' ? 'pointer' : 'not-allowed',
                   opacity: inputValue !== '' ? 1 : 0.5,
                   boxShadow: inputValue !== '' ? '0 2px 8px rgba(0,89,92,0.2)' : 'none',

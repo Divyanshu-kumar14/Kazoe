@@ -18,7 +18,7 @@ import { SOROBAN_LEVELS } from '../utils/levelConfig';
 const MULTIPLAYER_QUESTION_POOL = 60;
 
 function generateMultiplayerQuestions(config: MatchConfig): import('../utils/questionGenerator').Question[] {
-  const levelConfig = SOROBAN_LEVELS[config.level];
+  const levelConfig = SOROBAN_LEVELS[config.level]!;
   const seed = generateSeed();
   return generateQuestions(levelConfig, MULTIPLAYER_QUESTION_POOL, seed, config.questionType);
 }
@@ -68,7 +68,25 @@ export interface MultiplayerState {
   cancelMatchmaking: () => Promise<void>;
   setForfeitTimer: (value: number | null) => void;
   setUsername: (username: string | null) => void;
+  tickTimer: (timeRemaining: number) => void;
   reset: () => void;
+  
+  progressTimeout: ReturnType<typeof setTimeout> | null;
+  pendingProgress: {
+    matchId: string;
+    playerNumber: 1 | 2;
+    latestAnswer: AnswerPayload;
+    playerScore: number;
+    allAnswers: (AnswerPayload | null)[];
+  } | null;
+  scheduleProgressUpdate: (
+    matchId: string,
+    playerNumber: 1 | 2,
+    latestAnswer: AnswerPayload,
+    playerScore: number,
+    allAnswers: (AnswerPayload | null)[]
+  ) => void;
+  flushPendingProgress: () => Promise<void>;
 }
 
 export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
@@ -90,6 +108,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
 
   gameStartTime: 0,
   questionStartTime: 0,
+  tickTimer: (timeRemaining: number) => set({ timeRemaining }),
   timeRemaining: 180,
 
   forfeitTimer: null,
@@ -98,15 +117,18 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     questionType: 'add_sub',
     timeLimitSeconds: 180,
   },
+  
+  progressTimeout: null,
+  pendingProgress: null,
 
   initAuth: async () => {
     set({ isAuthenticating: true, authError: null });
     try {
       const userId = await getUserId();
-      const profile = await getProfile(userId);
+      const profileResult = await getProfile(userId);
       set({ 
         userId, 
-        username: profile?.username || null,
+        username: profileResult.data?.username ?? null,
         isAuthenticating: false 
       });
       return userId;
@@ -246,7 +268,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     });
 
     if (state.matchId && state.playerNumber) {
-      scheduleProgressUpdate(state.matchId, state.playerNumber, payload, playerScore, myAnswers);
+      get().scheduleProgressUpdate(state.matchId, state.playerNumber, payload, playerScore, myAnswers);
     }
 
     return payload;
@@ -275,7 +297,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     const { matchId } = state;
 
     // 1. Flush any pending answer progress to DB first
-    await flushPendingProgress();
+    await get().flushPendingProgress();
 
     // 2. Call server-side atomic finalize (determines winner with tiebreakers)
     try {
@@ -400,37 +422,56 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       questionStartTime: 0,
       timeRemaining: 180,
       forfeitTimer: null,
+      progressTimeout: null,
+      pendingProgress: null,
     });
   },
-}));
 
-let progressTimeout: ReturnType<typeof setTimeout> | null = null;
-let pendingProgress: {
-  matchId: string;
-  playerNumber: 1 | 2;
-  latestAnswer: AnswerPayload;
-  playerScore: number;
-  allAnswers: (AnswerPayload | null)[];
-} | null = null;
+  scheduleProgressUpdate: (matchId, playerNumber, latestAnswer, playerScore, allAnswers) => {
+    const state = get();
+    if (state.progressTimeout) clearTimeout(state.progressTimeout);
 
-function scheduleProgressUpdate(
-  matchId: string,
-  playerNumber: 1 | 2,
-  latestAnswer: AnswerPayload,
-  playerScore: number,
-  allAnswers: (AnswerPayload | null)[]
-) {
-  pendingProgress = { matchId, playerNumber, latestAnswer, playerScore, allAnswers };
-  if (progressTimeout) clearTimeout(progressTimeout);
-  progressTimeout = setTimeout(async () => {
-    if (!pendingProgress) return;
-    const p = pendingProgress;
-    pendingProgress = null;
-    progressTimeout = null;
+    const pendingProgress = { matchId, playerNumber, latestAnswer, playerScore, allAnswers };
+    const progressTimeout = setTimeout(async () => {
+      const p = get().pendingProgress;
+      set({ pendingProgress: null, progressTimeout: null });
+      if (!p) return;
+
+      try {
+        const submittedAnswers = p.allAnswers.filter(
+          (a): a is AnswerPayload => a !== null
+        );
+
+        const { error } = await requireSupabase().rpc('update_match_progress', {
+          match_id: p.matchId,
+          player_num: p.playerNumber,
+          player_score: p.playerScore,
+          answers: submittedAnswers,
+          player_done: false,
+        });
+
+        if (error) {
+          console.error('Error updating match progress:', error);
+        }
+      } catch (err) {
+        console.error('Failed to update match progress in background:', err);
+      }
+    }, 500);
+
+    set({ pendingProgress, progressTimeout });
+  },
+
+  flushPendingProgress: async () => {
+    const state = get();
+    if (state.progressTimeout) {
+      clearTimeout(state.progressTimeout);
+    }
+    const p = state.pendingProgress;
+    set({ pendingProgress: null, progressTimeout: null });
+    
+    if (!p) return;
 
     try {
-      // Use the atomic update_match_progress RPC instead of read-modify-write.
-      // This prevents race conditions where concurrent opponent writes get overwritten.
       const submittedAnswers = p.allAnswers.filter(
         (a): a is AnswerPayload => a !== null
       );
@@ -440,48 +481,17 @@ function scheduleProgressUpdate(
         player_num: p.playerNumber,
         player_score: p.playerScore,
         answers: submittedAnswers,
-        player_done: false,
+        player_done: true,
       });
 
       if (error) {
-        console.error('Error updating match progress:', error);
+        console.error('Error flushing match progress:', error);
       }
     } catch (err) {
-      console.error('Failed to update match progress in background:', err);
+      console.error('Failed to flush match progress:', err);
     }
-  }, 500);
-}
+  },
+}));
 
 export { MULTIPLAYER_QUESTION_POOL };
 
-/** Immediately flush any debounced progress update to DB. Called before finalize. */
-async function flushPendingProgress() {
-  if (progressTimeout) {
-    clearTimeout(progressTimeout);
-    progressTimeout = null;
-  }
-  if (!pendingProgress) return;
-
-  const p = pendingProgress;
-  pendingProgress = null;
-
-  try {
-    const submittedAnswers = p.allAnswers.filter(
-      (a): a is AnswerPayload => a !== null
-    );
-
-    const { error } = await requireSupabase().rpc('update_match_progress', {
-      match_id: p.matchId,
-      player_num: p.playerNumber,
-      player_score: p.playerScore,
-      answers: submittedAnswers,
-      player_done: true,
-    });
-
-    if (error) {
-      console.error('Error flushing match progress:', error);
-    }
-  } catch (err) {
-    console.error('Failed to flush match progress:', err);
-  }
-}

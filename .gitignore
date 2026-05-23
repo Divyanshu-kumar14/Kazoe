@@ -15,6 +15,8 @@ lerna-debug.log*
 
 .opencode
 
+.opencode
+
 node_modules
 dist
 dist-ssr
