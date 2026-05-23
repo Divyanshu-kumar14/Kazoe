@@ -28,7 +28,7 @@ export function StatsOverview({ hasHistory, stats }: StatsOverviewProps) {
         <div className="flex items-center gap-3">
           <span
             className="material-symbols-outlined"
-            style={{ fontSize: '24px', color: 'var(--color-primary)' }}
+            style={{ fontSize: '24px', color: 'var(--color-primary)' }} role="img" aria-hidden="true"
           >
             insights
           </span>
@@ -111,7 +111,7 @@ export function StatsOverview({ hasHistory, stats }: StatsOverviewProps) {
           className="flex flex-col items-center justify-center py-8 gap-3"
           style={{ color: 'var(--color-on-surface-variant)' }}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: '48px', opacity: 0.4 }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '48px', opacity: 0.4 }} role="img" aria-hidden="true">
             query_stats
           </span>
           <p className="text-sm text-center" style={{ maxWidth: '280px', margin: 0 }}>

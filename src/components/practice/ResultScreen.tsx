@@ -27,7 +27,7 @@ function ConfettiOverlay() {
   const [pieces] = useState(randomPieces);
 
   return (
-    <div
+    <div aria-hidden="true"
       style={{
         position: 'fixed',
         inset: 0,
@@ -176,7 +176,7 @@ export function ResultScreen() {
               <div className="flex items-center justify-center gap-2 mb-1">
                 <span
                   className="material-symbols-outlined"
-                  style={{ fontSize: '18px', color: 'var(--color-primary)' }}
+                  style={{ fontSize: '18px', color: 'var(--color-primary)' }} role="img" aria-hidden="true"
                 >
                   {stat.icon}
                 </span>
@@ -204,7 +204,7 @@ export function ResultScreen() {
             className="btn-secondary w-full justify-center"
             style={{ fontWeight: 700 }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">
               {showReview ? 'expand_less' : 'expand_more'}
             </span>
             {showReview ? 'Hide' : 'Review'} Answers
@@ -304,7 +304,7 @@ export function ResultScreen() {
             className="btn-primary flex-1 justify-center py-3"
             style={{ fontWeight: 700 }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>replay</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">replay</span>
             Try Again
           </button>
         </div>

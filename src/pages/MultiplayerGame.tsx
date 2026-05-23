@@ -357,14 +357,14 @@ export default memo(function MultiplayerGame() {
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
               <button type="button"
                 onClick={handleSkip}
-                className="flex-none px-5 py-3 text-on-surface-variant font-body font-semibold text-sm border border-outline-variant rounded-[0.625rem] cursor-pointer bg-surface-container"
+                className="flex-none px-5 py-3 text-on-surface-variant font-body font-semibold text-sm border border-outline-variant rounded-[0.625rem] cursor-pointer bg-surface-container focus-ring"
               >
                 Skip question
               </button>
               <button type="button"
                 onClick={handleSubmit}
                 disabled={inputValue === ''}
-                className="flex-1 px-6 py-3 font-body font-bold text-base border-none rounded-[0.625rem] transition-all"
+                className="flex-1 px-6 py-3 font-body font-bold text-base border-none rounded-[0.625rem] transition-all focus-ring"
                 style={{
                   background: inputValue !== '' ? 'var(--color-primary)' : 'var(--color-surface-container-high)',
                   color: inputValue !== '' ? 'var(--color-on-primary)' : 'var(--color-outline)',
@@ -437,7 +437,7 @@ export default memo(function MultiplayerGame() {
       </div>
 
       {forfeitTimer !== null && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 z-40" style={{ backgroundColor: 'var(--color-surface-container-highest)', borderTop: '1px solid var(--color-outline-variant)' }}>
+        <div aria-live="assertive" className="fixed bottom-0 left-0 right-0 p-4 z-40" style={{ backgroundColor: 'var(--color-surface-container-highest)', borderTop: '1px solid var(--color-outline-variant)' }}>
           <p className="text-center text-sm font-medium" style={{ color: 'var(--color-status-error)' }}>
             Opponent disconnected, winning by forfeit in {forfeitTimer}s
           </p>

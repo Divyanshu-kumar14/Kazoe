@@ -14,6 +14,17 @@ const MultiplayerHome = lazy(() => import('../pages/MultiplayerHome'));
 const MultiplayerGame = lazy(() => import('../pages/MultiplayerGame'));
 const MultiplayerResults = lazy(() => import('../pages/MultiplayerResults'));
 
+function LoadingFallback() {
+  return (
+    <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex flex-col items-center gap-3 text-on-surface-variant">
+        <span className="material-symbols-outlined animate-pulse text-[32px]" role="img" aria-hidden="true">hourglass_empty</span>
+        <span className="text-sm font-medium">Loading…</span>
+      </div>
+    </div>
+  );
+}
+
 function SessionGuard({ children }: { children: React.ReactNode }) {
   const status = useAppStore((s) => s.session.status);
   if (status === 'finished') return <Navigate to="/practice/results" replace />;
@@ -70,8 +81,8 @@ export function AppRouter() {
       <AuthInitializer>
         <Routes>
           <Route element={<Layout />}>
-            <Route path="/" element={<Suspense fallback={null}><Home /></Suspense>} />
-            <Route path="/practice" element={<Suspense fallback={null}><PracticeMode /></Suspense>} />
+            <Route path="/" element={<Suspense fallback={<LoadingFallback />}><Home /></Suspense>} />
+            <Route path="/practice" element={<Suspense fallback={<LoadingFallback />}><PracticeMode /></Suspense>} />
             <Route
               path="/practice/session"
               element={
@@ -88,15 +99,15 @@ export function AppRouter() {
                 </ResultsGuard>
               }
             />
-            <Route path="/sheets" element={<Suspense fallback={null}><SheetGenerator /></Suspense>} />
-            <Route path="/levels" element={<Suspense fallback={null}><LevelGuide /></Suspense>} />
+            <Route path="/sheets" element={<Suspense fallback={<LoadingFallback />}><SheetGenerator /></Suspense>} />
+            <Route path="/levels" element={<Suspense fallback={<LoadingFallback />}><LevelGuide /></Suspense>} />
 
-            <Route path="/multiplayer" element={<Suspense fallback={null}><MultiplayerHome /></Suspense>} />
+            <Route path="/multiplayer" element={<Suspense fallback={<LoadingFallback />}><MultiplayerHome /></Suspense>} />
             <Route
               path="/multiplayer/game/:matchId"
               element={
                 <MultiplayerGameGuard>
-                  <Suspense fallback={null}><MultiplayerGame /></Suspense>
+                  <Suspense fallback={<LoadingFallback />}><MultiplayerGame /></Suspense>
                 </MultiplayerGameGuard>
               }
             />
@@ -104,7 +115,7 @@ export function AppRouter() {
               path="/multiplayer/results"
               element={
                 <MultiplayerResultsGuard>
-                  <Suspense fallback={null}><MultiplayerResults /></Suspense>
+                  <Suspense fallback={<LoadingFallback />}><MultiplayerResults /></Suspense>
                 </MultiplayerResultsGuard>
               }
             />

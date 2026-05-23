@@ -19,7 +19,7 @@ export const AccuracySparkline = memo(function AccuracySparkline({ history }: { 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary)' }}>
+        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary)' }} role="img" aria-hidden="true">
           trending_up
         </span>
         <span className="label-caps">Accuracy Trend</span>

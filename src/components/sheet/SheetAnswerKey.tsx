@@ -21,7 +21,7 @@ export function SheetAnswerKey({
     <>
       <div className="sheet-no-print flex flex-col gap-4">
         <div className="flex items-center gap-3 px-1">
-          <span className="material-symbols-outlined text-[24px] text-primary">
+          <span className="material-symbols-outlined text-[24px] text-primary" role="img" aria-hidden="true">
             key
           </span>
           <h2 className="font-display text-[1.375rem] font-semibold text-on-surface m-0">

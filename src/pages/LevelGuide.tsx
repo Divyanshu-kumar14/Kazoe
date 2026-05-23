@@ -114,7 +114,7 @@ export default memo(function LevelGuide() {
                             letterSpacing: '0.03em',
                           }}
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }} role="img" aria-hidden="true">
                             {icon}
                           </span>
                           {rank.label}
@@ -161,7 +161,7 @@ export default memo(function LevelGuide() {
             >
               <span
                 className="material-symbols-outlined"
-                style={{ fontSize: '22px', color: 'var(--color-primary)' }}
+                style={{ fontSize: '22px', color: 'var(--color-primary)' }} role="img" aria-hidden="true"
               >
                 info
               </span>
@@ -194,7 +194,7 @@ export default memo(function LevelGuide() {
             >
               <span
                 className="material-symbols-outlined"
-                style={{ fontSize: '22px', color: 'var(--color-secondary)' }}
+                style={{ fontSize: '22px', color: 'var(--color-secondary)' }} role="img" aria-hidden="true"
               >
                 stacked_line_chart
               </span>

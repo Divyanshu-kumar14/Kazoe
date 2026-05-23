@@ -131,7 +131,7 @@ export default function SheetGenerator() {
                     : 'border-outline-variant bg-surface-container-low text-on-surface'
                 }`}
               >
-                <span className="material-symbols-outlined text-base">{opt.icon}</span>
+                <span className="material-symbols-outlined text-base" role="img" aria-hidden="true">{opt.icon}</span>
                 {opt.label}
               </button>
             ))}
@@ -213,19 +213,19 @@ export default function SheetGenerator() {
 
         <div className="flex flex-wrap gap-3 sheet-no-print">
           <button type="button" onClick={handleGenerate} className="btn-primary">
-            <span className="material-symbols-outlined text-lg">auto_awesome</span>
+            <span className="material-symbols-outlined text-lg" role="img" aria-hidden="true">auto_awesome</span>
             Generate Sheet
           </button>
           {questions.length > 0 && (
             <>
               <button type="button" onClick={() => dispatch({ type: 'TOGGLE_SHOW_ANSWERS' })} className="btn-secondary">
-                <span className="material-symbols-outlined text-lg">
+                <span className="material-symbols-outlined text-lg" role="img" aria-hidden="true">
                   {showAnswers ? 'visibility_off' : 'visibility'}
                 </span>
                 {showAnswers ? 'Hide Answer Key' : 'Show Answer Key'}
               </button>
               <button type="button" onClick={handlePrint} className="btn-secondary">
-                <span className="material-symbols-outlined text-lg">print</span>
+                <span className="material-symbols-outlined text-lg" role="img" aria-hidden="true">print</span>
                 Print
               </button>
             </>
@@ -340,7 +340,7 @@ export default function SheetGenerator() {
         {/* Empty state */}
         {questions.length === 0 && (
           <div className="card p-12 flex flex-col items-center justify-center gap-4 text-center bg-surface-container-low border border-dashed border-outline-variant min-h-[200px]">
-            <span className="material-symbols-outlined text-[48px] text-outline">
+            <span className="material-symbols-outlined text-[48px] text-outline" role="img" aria-hidden="true">
               note_add
             </span>
             <p className="text-on-surface-variant m-0">

@@ -32,7 +32,7 @@ export function MultiplayerDashboard({ hasMultiplayerHistory, mpStats, formatTim
       <div className="flex items-center gap-3">
         <span
           className="material-symbols-outlined"
-          style={{ fontSize: '24px', color: 'var(--color-primary)' }}
+          style={{ fontSize: '24px', color: 'var(--color-primary)' }} role="img" aria-hidden="true"
         >
           sports_esports
         </span>
@@ -103,7 +103,7 @@ export function MultiplayerDashboard({ hasMultiplayerHistory, mpStats, formatTim
                 <div className="flex items-center gap-3">
                   <span
                     className="size-9 rounded-lg flex items-center justify-center material-symbols-outlined text-white font-bold"
-                    style={{ backgroundColor: outcomeColor }}
+                    style={{ backgroundColor: outcomeColor }} role="img" aria-hidden="true"
                   >
                     {match.isWinner ? 'emoji_events' : match.isDraw ? 'handshake' : 'close'}
                   </span>

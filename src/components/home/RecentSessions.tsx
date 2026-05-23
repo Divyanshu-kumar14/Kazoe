@@ -27,7 +27,7 @@ export function RecentSessions({ last5, formatTimeAgo, gradeColor }: RecentSessi
       <div className="flex items-center gap-3">
         <span
           className="material-symbols-outlined"
-          style={{ fontSize: '24px', color: 'var(--color-primary)' }}
+          style={{ fontSize: '24px', color: 'var(--color-primary)' }} role="img" aria-hidden="true"
         >
           history
         </span>
