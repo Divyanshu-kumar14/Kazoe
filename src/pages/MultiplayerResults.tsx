@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMultiplayerStore } from '../store/useMultiplayerStore';
 import { useAppStore } from '../store/useAppStore';
+import { MultiplayerResultsSkeleton } from '../components/skeletons/MultiplayerResultsSkeleton';
 
 const DECIDED_BY_LABELS: Record<string, string> = {
   correct_count: 'Won by more correct answers',
@@ -61,7 +62,7 @@ export default function MultiplayerResults() {
     }
   }, [match, isWinner, isDraw, myScore, oppScore, myAccuracy, oppAccuracy, myTime, oppTime, saveMultiplayerMatch]);
 
-  if (!match) return null;
+  if (!match) return <MultiplayerResultsSkeleton />;
 
   return (
     <div className="flex-1 flex flex-col items-center px-4 py-10 animate-fade-in">

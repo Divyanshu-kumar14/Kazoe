@@ -37,6 +37,9 @@
   --color-status-error: #ef4444;
   --color-status-success: #22c55e;
 
+  --skeleton-base: #e2e8f0;
+  --skeleton-shine: #f8fafc;
+
   /* Z-index scale */
   --z-nav: 10;
   --z-overlay: 30;
@@ -69,6 +72,9 @@
   --color-secondary-container: #653e00;
   --color-on-secondary: #462a00;
   --color-on-secondary-container: #ffddb8;
+
+  --skeleton-base: #2d3748;
+  --skeleton-shine: #4a5568;
 }
 
 /* ─── Base styles ─── */
@@ -323,6 +329,24 @@ input[type="number"] {
 .focus-ring:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* ─── Skeleton System ─── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-shine) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 0.25rem;
 }
 
 /* ─── Larger slider touch targets ─── */
