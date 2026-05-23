@@ -40,6 +40,7 @@
   --skeleton-base: #e2e8f0;
   --skeleton-shine: #f8fafc;
 
+
   /* Z-index scale */
   --z-nav: 10;
   --z-overlay: 30;
@@ -348,6 +349,7 @@ input[type="number"] {
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: 0.25rem;
 }
+
 
 /* ─── Larger slider touch targets ─── */
 input[type="range"] {
