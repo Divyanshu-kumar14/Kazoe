@@ -12,13 +12,11 @@ import { RecentSessions } from '../components/home/RecentSessions';
 import { QuickLinks } from '../components/home/QuickLinks';
 import { getRank, getNextRank, computeStats, computeMultiplayerStats, DAILY_GOAL } from '../utils/stats';
 import type { Grade } from '../utils/grading';
-
 export default function Home() {
-  const store = useAppStore;
-  const history = store((s) => s.history);
-  const multiplayerHistory = store((s) => s.multiplayerHistory);
-  const level = store(s => s.practiceConfig.level);
-  const badges = store((s) => s.badges);
+  const history = useAppStore((s) => s.history);
+  const multiplayerHistory = useAppStore((s) => s.multiplayerHistory);
+  const level = useAppStore(s => s.practiceConfig.level);
+  const badges = useAppStore((s) => s.badges);
 
   const stats = useMemo(() => computeStats(history, multiplayerHistory), [history, multiplayerHistory]);
 

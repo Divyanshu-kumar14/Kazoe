@@ -238,6 +238,7 @@ export default memo(function MultiplayerGame() {
                       style={{
                         color: inputValue ? 'var(--color-primary)' : 'var(--color-outline)',
                         borderBottom: `3px solid ${inputValue ? 'var(--color-primary)' : 'var(--color-outline-variant)'}`,
+
                         caretColor: 'var(--color-primary)',
                       }}
                       onFocus={(e) => {
@@ -331,6 +332,7 @@ export default memo(function MultiplayerGame() {
                       style={{
                         color: inputValue ? 'var(--color-primary)' : 'var(--color-outline)',
                         borderBottom: `2px solid ${inputValue ? 'var(--color-primary)' : 'var(--color-outline-variant)'}`,
+
                         caretColor: 'var(--color-primary)',
                       }}
                     />

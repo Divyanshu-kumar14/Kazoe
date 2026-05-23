@@ -33,7 +33,6 @@ export async function getProfile(userId: string): Promise<ProfileResult<Profile 
   return { data: data as Profile };
 }
 
-
 /**
  * Fetch the top players from the leaderboard.
  */
