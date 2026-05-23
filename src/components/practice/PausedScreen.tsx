@@ -10,7 +10,7 @@ export function PausedScreen({ onResume, onQuit }: { onResume: () => void; onQui
           onClick={onResume}
           className="btn-primary font-bold"
         >
-          <span className="material-symbols-outlined text-[18px]">
+          <span className="material-symbols-outlined text-[18px]" role="img" aria-hidden="true">
             play_arrow
           </span>
           Resume
@@ -20,7 +20,7 @@ export function PausedScreen({ onResume, onQuit }: { onResume: () => void; onQui
           onClick={onQuit}
           className="btn-secondary font-bold"
         >
-          <span className="material-symbols-outlined text-[18px]">
+          <span className="material-symbols-outlined text-[18px]" role="img" aria-hidden="true">
             exit_to_app
           </span>
           Quit

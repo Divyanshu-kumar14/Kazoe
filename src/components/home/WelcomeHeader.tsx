@@ -47,7 +47,7 @@ export function WelcomeHeader({
         </p>
         <Link to="/practice" className="btn-primary mt-2 w-fit">
           {hasHistory ? 'Continue Practice' : 'Start Practice'}
-          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">arrow_forward</span>
         </Link>
       </div>
 

@@ -80,7 +80,7 @@ export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore:
       <div className="flex items-center gap-3">
         <span
           className="material-symbols-outlined"
-          style={{ fontSize: '24px', color: 'var(--color-primary)' }}
+          style={{ fontSize: '24px', color: 'var(--color-primary)' }} role="img" aria-hidden="true"
         >
           leaderboard
         </span>
@@ -111,7 +111,7 @@ export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore:
             if (player.id === 'ellipsis') {
               return (
                 <div key="ellipsis-separator" className="flex justify-center py-1">
-                  <span className="material-symbols-outlined" style={{ color: 'var(--color-outline)', fontSize: '20px' }}>
+                  <span className="material-symbols-outlined" style={{ color: 'var(--color-outline)', fontSize: '20px' }} role="img" aria-hidden="true">
                     more_vert
                   </span>
                 </div>

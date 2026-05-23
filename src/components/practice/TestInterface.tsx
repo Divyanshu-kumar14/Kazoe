@@ -85,7 +85,7 @@ function PausedScreen({ onResume, onQuit }: { onResume: () => void; onQuit: () =
           className="btn-primary"
           style={{ fontWeight: 700 }}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">
             play_arrow
           </span>
           Resume
@@ -95,7 +95,7 @@ function PausedScreen({ onResume, onQuit }: { onResume: () => void; onQuit: () =
           className="btn-secondary"
           style={{ fontWeight: 700 }}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">
             exit_to_app
           </span>
           Quit
@@ -277,7 +277,7 @@ export function TestInterface() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
           <span
             className="material-symbols-outlined"
-            style={{ fontSize: '15px', color: 'var(--color-outline)' }}
+            style={{ fontSize: '15px', color: 'var(--color-outline)' }} role="img" aria-hidden="true"
           >
             layers
           </span>
@@ -305,13 +305,14 @@ export function TestInterface() {
               : 'var(--color-surface-container)',
             transition: 'background-color 0.3s ease',
           }}
+          aria-live="polite"
         >
           <span
             className="material-symbols-outlined"
             style={{
               fontSize: '14px',
               color: isWarning ? 'var(--color-error)' : 'var(--color-outline)',
-            }}
+            }} role="img" aria-hidden="true"
           >
             timer
           </span>
@@ -341,7 +342,7 @@ export function TestInterface() {
           </span>
           <button type="button"
             onClick={togglePause}
-            title="Pause session"
+            aria-label="Pause session"
             className="icon-btn"
             style={{
               background: 'none',
@@ -355,7 +356,7 @@ export function TestInterface() {
               color: 'var(--color-outline)',
             }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">
               pause
             </span>
           </button>
@@ -652,7 +653,7 @@ export function TestInterface() {
       >
         <button type="button"
           onClick={handleSkip}
-          className="skip-btn"
+          className="skip-btn focus-ring"
           style={{
             flex: '0 0 auto',
             padding: '0.75rem 1.25rem',
@@ -671,7 +672,7 @@ export function TestInterface() {
         <button type="button"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="submit-btn"
+          className="submit-btn focus-ring"
           style={{
             flex: 1,
             padding: '0.75rem 1.5rem',

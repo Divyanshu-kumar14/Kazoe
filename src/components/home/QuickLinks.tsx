@@ -15,7 +15,7 @@ export function QuickLinks() {
           >
             <span
               className="material-symbols-outlined"
-              style={{ fontSize: '22px', color: 'var(--color-primary)' }}
+              style={{ fontSize: '22px', color: 'var(--color-primary)' }} role="img" aria-hidden="true"
             >
               description
             </span>
@@ -40,7 +40,7 @@ export function QuickLinks() {
           style={{ color: 'var(--color-primary)' }}
         >
           Generate
-          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
+          <span className="material-symbols-outlined" style={{ fontSize: '16px' }} role="img" aria-hidden="true">arrow_forward</span>
         </span>
       </Link>
 
@@ -56,7 +56,7 @@ export function QuickLinks() {
           >
             <span
               className="material-symbols-outlined"
-              style={{ fontSize: '22px', color: 'var(--color-primary)' }}
+              style={{ fontSize: '22px', color: 'var(--color-primary)' }} role="img" aria-hidden="true"
             >
               school
             </span>
@@ -81,7 +81,7 @@ export function QuickLinks() {
           style={{ color: 'var(--color-primary)' }}
         >
           View Path
-          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
+          <span className="material-symbols-outlined" style={{ fontSize: '16px' }} role="img" aria-hidden="true">arrow_forward</span>
         </span>
       </Link>
     </div>

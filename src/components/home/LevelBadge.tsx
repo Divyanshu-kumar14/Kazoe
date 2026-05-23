@@ -23,7 +23,7 @@ export function LevelBadge({ level, totalPoints, rank, nextRank }: LevelBadgePro
     >
       <span
         className="material-symbols-outlined"
-        style={{ fontSize: '36px', color: 'var(--color-secondary-container)', fontVariationSettings: "'FILL' 1" }}
+        style={{ fontSize: '36px', color: 'var(--color-secondary-container)', fontVariationSettings: "'FILL' 1" }} role="img" aria-hidden="true"
       >
         {rank.icon}
       </span>

@@ -8,7 +8,7 @@ export const StatBlock = memo(function StatBlock({ icon, label, value }: { icon:
     >
       <span
         className="material-symbols-outlined"
-        style={{ fontSize: '20px', color: 'var(--color-primary)' }}
+        style={{ fontSize: '20px', color: 'var(--color-primary)' }} role="img" aria-hidden="true"
       >
         {icon}
       </span>

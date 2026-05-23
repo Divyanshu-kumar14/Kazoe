@@ -71,7 +71,7 @@ export default function MultiplayerResults() {
             <>
               <span
                 className="material-symbols-outlined"
-                style={{ fontSize: '56px', color: 'var(--color-on-surface-variant)', fontVariationSettings: "'FILL' 1" }}
+                style={{ fontSize: '56px', color: 'var(--color-on-surface-variant)', fontVariationSettings: "'FILL' 1" }} role="img" aria-hidden="true"
               >
                 handshake
               </span>
@@ -83,7 +83,7 @@ export default function MultiplayerResults() {
             <>
               <span
                 className="material-symbols-outlined"
-                style={{ fontSize: '56px', color: 'var(--color-primary)', fontVariationSettings: "'FILL' 1" }}
+                style={{ fontSize: '56px', color: 'var(--color-primary)', fontVariationSettings: "'FILL' 1" }} role="img" aria-hidden="true"
               >
                 emoji_events
               </span>
@@ -95,7 +95,7 @@ export default function MultiplayerResults() {
             <>
               <span
                 className="material-symbols-outlined"
-                style={{ fontSize: '56px', color: 'var(--color-on-surface-variant)' }}
+                style={{ fontSize: '56px', color: 'var(--color-on-surface-variant)' }} role="img" aria-hidden="true"
               >
                 sentiment_dissatisfied
               </span>
@@ -115,7 +115,7 @@ export default function MultiplayerResults() {
                 color: isDraw ? 'var(--color-on-surface-variant)' : isWinner ? 'var(--color-on-primary-container)' : 'var(--color-on-surface-variant)',
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }} role="img" aria-hidden="true">
                 {isDraw ? 'balance' : 'info'}
               </span>
               {decidedLabel}

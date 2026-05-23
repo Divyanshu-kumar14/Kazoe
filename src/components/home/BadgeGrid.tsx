@@ -4,7 +4,7 @@ export const BadgeGrid = memo(function BadgeGrid({ badges }: { badges: Array<{ i
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary)' }}>
+        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary)' }} role="img" aria-hidden="true">
           emoji_events
         </span>
         <span className="label-caps">Achievements</span>
@@ -27,7 +27,7 @@ export const BadgeGrid = memo(function BadgeGrid({ badges }: { badges: Array<{ i
               style={{
                 fontSize: '16px',
                 color: badge.unlocked ? 'var(--color-on-primary-container)' : 'var(--color-outline)',
-              }}
+              }} role="img" aria-hidden="true"
             >
               {badge.icon}
             </span>
