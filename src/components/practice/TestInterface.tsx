@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSound } from '../../hooks/useSound';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { useAdaptiveSession } from '../../hooks/useAdaptiveSession';
+import { useFullscreen } from '../../hooks/useFullscreen';
 import { completeDailyChallenge } from '../../utils/dailyChallenge';
 import { Countdown } from './Countdown';
 import { PausedOverlay } from './PausedOverlay';
@@ -19,29 +20,45 @@ interface TopBarProps {
   onTogglePause: () => void;
   isAdaptive: boolean;
   adaptiveOffset: number;
+  focusMode: boolean;
+  isFullscreen: boolean;
+  onToggleFullscreen: () => void;
 }
 
-const TopBar = memo(function TopBar({ timeLeft, isWarning, level, currentIndex, onTogglePause, isAdaptive, adaptiveOffset }: TopBarProps): ReactElement {
+const TopBar = memo(function TopBar({ timeLeft, isWarning, level, currentIndex, onTogglePause, isAdaptive, adaptiveOffset, focusMode, isFullscreen, onToggleFullscreen }: TopBarProps): ReactElement {
+  const fullscreenActive = focusMode && isFullscreen;
+
   return (
     <div style={topBarContainer}>
-      <LevelBadge level={level} />
-      {isAdaptive && (
-        <span
-          className="px-2 py-0.5 rounded text-[10px] font-bold"
-          style={{
-            fontFamily: 'var(--font-mono)',
-            backgroundColor: adaptiveOffset > 0 ? 'var(--color-primary-container)' : adaptiveOffset < 0 ? 'var(--color-secondary-container)' : 'var(--color-surface-container)',
-            color: adaptiveOffset > 0 ? 'var(--color-primary)' : adaptiveOffset < 0 ? 'var(--color-on-secondary-container)' : 'var(--color-on-surface-variant)',
-          }}
-        >
-          {adaptiveOffset > 0 ? `+${adaptiveOffset}` : adaptiveOffset < 0 ? `${adaptiveOffset}` : 'base'}
-        </span>
-      )}
-      <TimerBadge timeLeft={timeLeft} isWarning={isWarning} />
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <span style={doneLabel}>{currentIndex} done</span>
+        <LevelBadge level={level} />
+        {isAdaptive && (
+          <span
+            className="px-2 py-0.5 rounded text-[10px] font-bold"
+            style={{
+              fontFamily: 'var(--font-mono)',
+              backgroundColor: adaptiveOffset > 0 ? 'var(--color-primary-container)' : adaptiveOffset < 0 ? 'var(--color-secondary-container)' : 'var(--color-surface-container)',
+              color: adaptiveOffset > 0 ? 'var(--color-primary)' : adaptiveOffset < 0 ? 'var(--color-on-secondary-container)' : 'var(--color-on-surface-variant)',
+            }}
+          >
+            {adaptiveOffset > 0 ? `+${adaptiveOffset}` : adaptiveOffset < 0 ? `${adaptiveOffset}` : 'base'}
+          </span>
+        )}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {!fullscreenActive && (
+          <>
+            <TimerBadge timeLeft={timeLeft} isWarning={isWarning} />
+            <span style={doneLabel}>{currentIndex} done</span>
+          </>
+        )}
         <button type="button" onClick={onTogglePause} aria-label="Pause session" style={pauseButton}>
           <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">pause</span>
+        </button>
+        <button type="button" onClick={onToggleFullscreen} aria-label={fullscreenActive ? 'Exit fullscreen' : 'Enter fullscreen'} style={fullscreenBtn}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">
+            {fullscreenActive ? 'fullscreen_exit' : 'fullscreen'}
+          </span>
         </button>
       </div>
     </div>
@@ -216,12 +233,32 @@ export function TestInterface(): ReactElement | null {
   const timeLimitSeconds = useAppStore((s) => s.practiceConfig.timeLimitSeconds);
   const level = useAppStore((s) => s.practiceConfig.level);
   const source = useAppStore((s) => s.practiceConfig.source);
+  const focusMode = useAppStore((s) => s.practiceConfig.focusMode) ?? false;
   const submitAnswer = useAppStore((s) => s.submitAnswer);
   const endSession = useAppStore((s) => s.endSession);
   const navigate = useNavigate();
 
   // Adaptive difficulty hook
   const { getCurrentOffset, isAdaptive } = useAdaptiveSession();
+
+  const [phase, setPhase] = useState<'countdown' | 'playing' | 'paused'>('countdown');
+
+  // Focus mode
+  const { isFullscreen, supported, enter, exit, toggle: toggleFullscreen } = useFullscreen();
+
+  // Auto-enter fullscreen when practice begins in focus mode
+  useEffect(() => {
+    if (phase === 'playing' && focusMode && supported && !isFullscreen) {
+      enter();
+    }
+  }, [phase, focusMode, supported, isFullscreen, enter]);
+
+  // Auto-exit fullscreen when session ends
+  useEffect(() => {
+    if (sessionStatus === 'finished' && isFullscreen) {
+      exit();
+    }
+  }, [sessionStatus, isFullscreen, exit]);
 
   const handleTimeUp = useCallback(() => {
     endSession();
@@ -235,8 +272,6 @@ export function TestInterface(): ReactElement | null {
     const dest = source === 'challenge' ? '/challenge/results' : '/practice/results';
     navigate(dest, { replace: true });
   }, [endSession, navigate, source]);
-
-  const [phase, setPhase] = useState<'countdown' | 'playing' | 'paused'>('countdown');
   const { timeLeft } = useGameTimer(timeLimitSeconds, phase, handleTimeUp);
   const [inputVal, setInputVal] = useState('');
   const [shakeKey, setShakeKey] = useState(0);
@@ -351,8 +386,8 @@ export function TestInterface(): ReactElement | null {
 
   return (
     <div className="animate-fade-in" style={pageContainer}>
-      <TopBar timeLeft={timeLeft} isWarning={isWarning} level={level} currentIndex={currentIndex} onTogglePause={togglePause} isAdaptive={isAdaptive} adaptiveOffset={getCurrentOffset()} />
-      <ProgressBar progress={progress} />
+      <TopBar timeLeft={timeLeft} isWarning={isWarning} level={level} currentIndex={currentIndex} onTogglePause={togglePause} isAdaptive={isAdaptive} adaptiveOffset={getCurrentOffset()} focusMode={focusMode} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
+      {!(focusMode && isFullscreen) && <ProgressBar progress={progress} />}
 
       <div className="w-full max-w-[420px] rounded-2xl overflow-hidden p-5 sm:p-7 md:p-8" style={questionCard}>
         <div style={questionNumberBadge}>
@@ -367,7 +402,7 @@ export function TestInterface(): ReactElement | null {
       </div>
 
       <ActionButtons canSubmit={canSubmit} onSubmit={handleSubmit} onSkip={handleSkip} />
-      <KeyboardHint />
+      {!(focusMode && isFullscreen) && <KeyboardHint />}
     </div>
   );
 }
@@ -424,6 +459,18 @@ const doneLabel: Record<string, string | number> = {
 };
 
 const pauseButton: Record<string, string | number> = {
+  background: 'none',
+  border: 'none',
+  padding: '4px',
+  cursor: 'pointer',
+  borderRadius: '50%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: 'var(--color-outline)',
+};
+
+const fullscreenBtn: Record<string, string | number> = {
   background: 'none',
   border: 'none',
   padding: '4px',

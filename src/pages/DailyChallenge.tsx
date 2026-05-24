@@ -178,30 +178,30 @@ export default function DailyChallenge() {
           {/* Config */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
-              <span className="label-caps">Level</span>
+              <span className="label-caps whitespace-nowrap">Level</span>
               <select
                 className="input-field"
                 aria-label="Challenge level"
                 value={currentLevel}
                 onChange={(e) => setConfig({ level: Number(e.target.value) })}
-                style={{ maxWidth: '120px' }}
               >
                 {Array.from({ length: 10 }, (_, i) => i + 1).map((lvl) => (
                   <option key={lvl} value={lvl}>
-                    {lvl} — {SOROBAN_LEVELS[lvl]!.operations.replace(/_/g, ' ')}
+                    {lvl} — {questionType === 'add_sub'
+                      ? SOROBAN_LEVELS[lvl]!.operations.replace(/_/g, ' ')
+                      : questionType === 'multiplication' ? 'multiplication' : 'division'}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="flex items-center gap-4">
-              <span className="label-caps">Type</span>
+              <span className="label-caps whitespace-nowrap">Type</span>
               <select
                 className="input-field"
                 aria-label="Question type"
                 value={questionType}
                 onChange={(e) => setConfig({ questionType: e.target.value as 'add_sub' | 'multiplication' | 'division' })}
-                style={{ maxWidth: '180px' }}
               >
                 <option value="add_sub">Addition / Subtraction</option>
                 <option value="multiplication">Multiplication</option>
