@@ -15,6 +15,7 @@ export const ConfigPanel = memo(function ConfigPanel() {
   const overrides = useAppStore((s) => s.practiceConfig.overrides);
   const questionType = useAppStore((s) => s.practiceConfig.questionType);
   const adaptiveDifficulty = useAppStore((s) => s.practiceConfig.adaptiveDifficulty) ?? false;
+  const focusMode = useAppStore((s) => s.practiceConfig.focusMode) ?? false;
   const setConfig = useAppStore((s) => s.setPracticeConfig);
   const startSession = useAppStore((s) => s.startSession);
   const navigate = useNavigate();
@@ -84,6 +85,34 @@ export const ConfigPanel = memo(function ConfigPanel() {
                   {adaptiveDifficulty
                     ? 'Questions adjust in real-time based on your performance'
                     : 'Fixed difficulty based on level preset'}
+                </span>
+              </div>
+            </label>
+          </div>
+
+          <div className="card p-4 flex flex-col gap-3">
+            <span className="label-caps">Session Mode</span>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                style={{
+                  backgroundColor: focusMode ? 'var(--color-primary)' : 'var(--color-surface-container-high)',
+                }}
+                onClick={() => setConfig({ focusMode: !focusMode })}
+              >
+                <span
+                  className="inline-block size-5 rounded-full bg-white transition-transform shadow-sm"
+                  style={{ transform: focusMode ? 'translateX(22px)' : 'translateX(2px)' }}
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold" style={{ color: 'var(--color-on-surface)' }}>
+                  Focus Mode
+                </span>
+                <span className="text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>
+                  {focusMode
+                    ? 'Auto-fullscreen with minimal UI. Hover top area to reveal timer.'
+                    : 'Standard session with full controls visible'}
                 </span>
               </div>
             </label>

@@ -115,6 +115,7 @@ interface PracticeConfig {
   overrides: Partial<LevelConfig>; // manual param overrides over level preset
   questionType: 'add_sub' | 'multiplication' | 'division';
   adaptiveDifficulty?: boolean;
+  focusMode?: boolean;
   source?: 'practice' | 'challenge';
 }
 
@@ -251,6 +252,7 @@ export const useAppStore = create<AppStore>((set, get) => {
       overrides: {},
       questionType: 'add_sub',
       adaptiveDifficulty: false,
+      focusMode: false,
       source: 'practice',
       ...readURLParams(),
     },
