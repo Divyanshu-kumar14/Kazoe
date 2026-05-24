@@ -10,11 +10,15 @@ import { LevelGuideSkeleton } from '../components/skeletons/LevelGuideSkeleton';
 import { MultiplayerHomeSkeleton } from '../components/skeletons/MultiplayerHomeSkeleton';
 import { MultiplayerGameSkeleton } from '../components/skeletons/MultiplayerGameSkeleton';
 import { MultiplayerResultsSkeleton } from '../components/skeletons/MultiplayerResultsSkeleton';
+import { ChallengeSkeleton } from '../components/skeletons/ChallengeSkeleton';
+import { AnalyticsSkeleton } from '../components/skeletons/AnalyticsSkeleton';
 
 const Home = lazy(() => import('../pages/Home'));
 const PracticeMode = lazy(() => import('../pages/PracticeMode'));
 const SheetGenerator = lazy(() => import('../pages/SheetGenerator'));
 const LevelGuide = lazy(() => import('../pages/LevelGuide'));
+const DailyChallenge = lazy(() => import('../pages/DailyChallenge'));
+const Analytics = lazy(() => import('../pages/Analytics'));
 
 const TestInterface = lazy(() => import('../components/practice/TestInterface').then(m => ({ default: m.TestInterface })));
 const ResultScreen = lazy(() => import('../components/practice/ResultScreen').then(m => ({ default: m.ResultScreen })));
@@ -33,6 +37,20 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
 function ResultsGuard({ children }: { children: React.ReactNode }) {
   const status = useAppStore((s) => s.session.status);
   if (status !== 'finished') return <Navigate to="/practice" replace />;
+  return <>{children}</>;
+}
+
+function ChallengeSessionGuard({ children }: { children: React.ReactNode }) {
+  const status = useAppStore((s) => s.session.status);
+  const source = useAppStore((s) => s.practiceConfig.source);
+  if (status === 'finished') return <Navigate to="/challenge/results" replace />;
+  if (status !== 'active' || source !== 'challenge') return <Navigate to="/challenge" replace />;
+  return <>{children}</>;
+}
+
+function ChallengeResultsGuard({ children }: { children: React.ReactNode }) {
+  const status = useAppStore((s) => s.session.status);
+  if (status !== 'finished') return <Navigate to="/challenge" replace />;
   return <>{children}</>;
 }
 
@@ -105,6 +123,7 @@ export function AppRouter() {
               element={<Suspense fallback={<HomePageSkeleton />}><Home /></Suspense>}
             />
 
+            {/* Practice routes */}
             <Route
               path="/practice"
               element={<Suspense fallback={<PracticeModeSkeleton />}><PracticeMode /></Suspense>}
@@ -130,6 +149,39 @@ export function AppRouter() {
               }
             />
 
+            {/* Daily Challenge routes */}
+            <Route
+              path="/challenge"
+              element={<Suspense fallback={<ChallengeSkeleton />}><DailyChallenge /></Suspense>}
+            />
+            <Route
+              path="/challenge/session"
+              element={
+                <ChallengeSessionGuard>
+                  <Suspense fallback={<ChallengeSkeleton />}>
+                    <TestInterface />
+                  </Suspense>
+                </ChallengeSessionGuard>
+              }
+            />
+            <Route
+              path="/challenge/results"
+              element={
+                <ChallengeResultsGuard>
+                  <Suspense fallback={<ChallengeSkeleton />}>
+                    <ResultScreen />
+                  </Suspense>
+                </ChallengeResultsGuard>
+              }
+            />
+
+            {/* Analytics route */}
+            <Route
+              path="/analytics"
+              element={<Suspense fallback={<AnalyticsSkeleton />}><Analytics /></Suspense>}
+            />
+
+            {/* Other existing routes */}
             <Route
               path="/sheets"
               element={<Suspense fallback={<SheetGeneratorSkeleton />}><SheetGenerator /></Suspense>}

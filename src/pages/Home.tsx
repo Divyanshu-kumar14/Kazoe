@@ -1,5 +1,5 @@
-
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { AccuracySparkline } from '../components/home/AccuracySparkline';
 import { BadgeGrid } from '../components/home/BadgeGrid';
@@ -11,7 +11,9 @@ import { MultiplayerDashboard } from '../components/home/MultiplayerDashboard';
 import { RecentSessions } from '../components/home/RecentSessions';
 import { QuickLinks } from '../components/home/QuickLinks';
 import { getRank, getNextRank, computeStats, computeMultiplayerStats, DAILY_GOAL } from '../utils/stats';
+import { loadDailyChallengeStatus, getTodayDate } from '../utils/dailyChallenge';
 import type { Grade } from '../utils/grading';
+
 export default function Home() {
   const history = useAppStore((s) => s.history);
   const multiplayerHistory = useAppStore((s) => s.multiplayerHistory);
@@ -19,7 +21,6 @@ export default function Home() {
   const badges = useAppStore((s) => s.badges);
 
   const stats = useMemo(() => computeStats(history, multiplayerHistory), [history, multiplayerHistory]);
-
   const mpStats = useMemo(() => computeMultiplayerStats(multiplayerHistory), [multiplayerHistory]);
 
   const sparklineData = useMemo(() => history.slice(-20), [history]);
@@ -32,9 +33,68 @@ export default function Home() {
   const goalProgress = Math.min(stats.todaySessions / DAILY_GOAL, 1);
   const goalPercent = Math.round(goalProgress * 100);
 
+  // Daily challenge status
+  const challengeStatus = useMemo(() => {
+    const status = loadDailyChallengeStatus();
+    const isToday = status.date === getTodayDate();
+    const completed = isToday && status.completed && history.some(h => h.isDailyChallenge);
+    return { completed };
+  }, [history]);
+
   return (
     <div className="flex-1 animate-fade-in-up">
       <div className="max-w-[1200px] mx-auto px-6 py-10 flex flex-col gap-8">
+        {/* Daily Challenge Banner */}
+        <Link
+          to="/challenge"
+          className="card card-interactive p-4 md:p-5 flex items-center justify-between gap-4 no-underline"
+          style={{ color: 'inherit', borderLeft: '4px solid var(--color-secondary)' }}
+        >
+          <div className="flex items-center gap-4">
+            <div
+              className="size-11 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: challengeStatus.completed ? 'var(--color-primary-container)' : 'var(--color-secondary-container)' }}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{
+                  fontSize: '24px',
+                  color: challengeStatus.completed ? 'var(--color-primary)' : 'var(--color-on-secondary-container)',
+                  fontVariationSettings: "'FILL' 1",
+                }}
+                role="img" aria-hidden="true"
+              >
+                {challengeStatus.completed ? 'check_circle' : 'emoji_events'}
+              </span>
+            </div>
+            <div>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.0625rem',
+                  fontWeight: 600,
+                  color: 'var(--color-on-surface)',
+                  margin: 0,
+                }}
+              >
+                {challengeStatus.completed ? "Today's Challenge Complete!" : 'Daily Challenge'}
+              </h3>
+              <p className="text-sm mt-0.5" style={{ color: 'var(--color-on-surface-variant)', margin: 0 }}>
+                {challengeStatus.completed
+                  ? 'You crushed it. Come back tomorrow for a new one.'
+                  : 'Same questions for everyone. Complete today\'s challenge.'}
+              </p>
+            </div>
+          </div>
+          <span
+            className="flex items-center gap-1 text-sm font-bold flex-shrink-0"
+            style={{ color: 'var(--color-primary)' }}
+          >
+            {challengeStatus.completed ? 'View' : 'Start'}
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }} role="img" aria-hidden="true">arrow_forward</span>
+          </span>
+        </Link>
+
         <WelcomeHeader
           hasHistory={hasHistory}
           todaySessions={stats.todaySessions}
@@ -75,6 +135,33 @@ export default function Home() {
 
           <div className="lg:col-span-1 flex flex-col gap-6">
             <Leaderboard userScore={stats.totalPoints} />
+
+            {hasHistory && (
+              <Link
+                to="/analytics"
+                className="card card-interactive p-5 flex items-center gap-4 no-underline"
+                style={{ color: 'inherit' }}
+              >
+                <div className="size-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: 'var(--color-surface-container)' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '22px', color: 'var(--color-primary)' }} role="img" aria-hidden="true">
+                    query_stats
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 600, color: 'var(--color-on-surface)', margin: 0 }}>
+                    Detailed Analytics
+                  </h3>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--color-on-surface-variant)', margin: 0 }}>
+                    Trends, level mastery, and performance breakdowns
+                  </p>
+                </div>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary)' }} role="img" aria-hidden="true">
+                  arrow_forward
+                </span>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -83,8 +170,6 @@ export default function Home() {
     </div>
   );
 }
-
-
 
 function gradeColor(grade: Grade) {
   switch (grade) {
