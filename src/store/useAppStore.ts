@@ -15,7 +15,6 @@ if (typeof document !== 'undefined') {
   if (initialTheme === 'dark') document.documentElement.classList.add('dark');
 }
 
-// --- Session History (persisted to localStorage) ---
 export interface HistoryEntry {
   id: string;
   timestamp: number;         // Date.now() when session finished
@@ -39,7 +38,6 @@ function saveHistory(history: HistoryEntry[]) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
 
-// --- Multiplayer History (persisted to localStorage) ---
 export interface MultiplayerHistoryEntry {
   id: string;
   timestamp: number;
@@ -68,7 +66,6 @@ function saveMultiplayerHistory(history: MultiplayerHistoryEntry[]) {
   localStorage.setItem(MP_HISTORY_KEY, JSON.stringify(history));
 }
 
-// --- Achievement Badges ---
 export interface Badge {
   id: string;
   name: string;
@@ -108,7 +105,6 @@ function saveAchievements(badges: Badge[]) {
   localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(badges));
 }
 
-// --- Practice Config State ---
 interface PracticeConfig {
   level: number;
   timeLimitSeconds: number;
@@ -117,7 +113,6 @@ interface PracticeConfig {
   questionType: 'add_sub' | 'multiplication' | 'division';
 }
 
-// --- Active Session State ---
 interface SessionState {
   status: 'idle' | 'active' | 'finished';
   questions: Question[];
