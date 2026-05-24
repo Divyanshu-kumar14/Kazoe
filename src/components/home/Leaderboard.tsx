@@ -12,16 +12,12 @@ export const Leaderboard = memo(function Leaderboard({ userScore }: { userScore:
 
   useEffect(() => {
     let mounted = true;
-    async function load() {
-      setState(prev => ({ ...prev, isLoading: true }));
-      const result = await getLeaderboard(50);
+    getLeaderboard(50).then((result) => {
       if (mounted) {
-        // getLeaderboard might return data directly or { data } depending on changes, handle safely
         const data = result.data ?? result ?? [];
         setState({ leaderboard: Array.isArray(data) ? data : [], isLoading: false });
       }
-    }
-    load();
+    });
     return () => {
       mounted = false;
     };

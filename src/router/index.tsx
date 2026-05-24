@@ -1,10 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { TestInterface } from '../components/practice/TestInterface';
-import { ResultScreen } from '../components/practice/ResultScreen';
 import { useAppStore } from '../store/useAppStore';
-import { useMultiplayerStore } from '../store/useMultiplayerStore';
 import { Layout } from '../components/layout/Layout';
+
 import { HomePageSkeleton } from '../components/skeletons/HomePageSkeleton';
 import { PracticeModeSkeleton } from '../components/skeletons/PracticeModeSkeleton';
 import { SheetGeneratorSkeleton } from '../components/skeletons/SheetGeneratorSkeleton';
@@ -17,11 +15,13 @@ const Home = lazy(() => import('../pages/Home'));
 const PracticeMode = lazy(() => import('../pages/PracticeMode'));
 const SheetGenerator = lazy(() => import('../pages/SheetGenerator'));
 const LevelGuide = lazy(() => import('../pages/LevelGuide'));
+
+const TestInterface = lazy(() => import('../components/practice/TestInterface').then(m => ({ default: m.TestInterface })));
+const ResultScreen = lazy(() => import('../components/practice/ResultScreen').then(m => ({ default: m.ResultScreen })));
+
 const MultiplayerHome = lazy(() => import('../pages/MultiplayerHome'));
 const MultiplayerGame = lazy(() => import('../pages/MultiplayerGame'));
 const MultiplayerResults = lazy(() => import('../pages/MultiplayerResults'));
-
-// LoadingFallback removed in favor of page-specific skeletons
 
 function SessionGuard({ children }: { children: React.ReactNode }) {
   const status = useAppStore((s) => s.session.status);
@@ -36,40 +36,61 @@ function ResultsGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Multiplayer guards — dynamic import keeps @supabase/supabase-js out of the main bundle (~80 kB saved)
+
+function AuthInitializer({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    import('../store/useMultiplayerStore').then(({ useMultiplayerStore }) => {
+      if (!mounted) return;
+      const state = useMultiplayerStore.getState();
+      if (state.userId) {
+        setReady(true);
+        return;
+      }
+      state.initAuth()
+        .then(() => { if (mounted) setReady(true); })
+        .catch(() => { if (mounted) setReady(true); });
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  if (!ready) return null;
+  return <>{children}</>;
+}
+
 function MultiplayerGameGuard({ children }: { children: React.ReactNode }) {
-  const matchStatus = useMultiplayerStore((s) => s.matchStatus);
+  const [matchStatus, setMatchStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    import('../store/useMultiplayerStore').then(({ useMultiplayerStore }) => {
+      if (!mounted) return;
+      setMatchStatus(useMultiplayerStore.getState().matchStatus);
+    });
+    return () => { mounted = false; };
+  }, []);
+
   if (matchStatus === 'finished') return <Navigate to="/multiplayer/results" replace />;
   if (matchStatus === 'idle') return <Navigate to="/multiplayer" replace />;
   return <>{children}</>;
 }
 
 function MultiplayerResultsGuard({ children }: { children: React.ReactNode }) {
-  const matchStatus = useMultiplayerStore((s) => s.matchStatus);
-  if (matchStatus !== 'finished') return <Navigate to="/multiplayer" replace />;
-  return <>{children}</>;
-}
-
-function AuthInitializer({ children }: { children: React.ReactNode }) {
-  const { initAuth, userId } = useMultiplayerStore();
-  const [ready, setReady] = useState(userId !== null);
+  const [matchStatus, setMatchStatus] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    const init = async () => {
-      if (!userId) {
-        try {
-          await initAuth();
-        } catch {
-          // Ignore auth init errors
-        }
-      }
-      if (mounted) setReady(true);
-    };
-    init();
+    import('../store/useMultiplayerStore').then(({ useMultiplayerStore }) => {
+      if (!mounted) return;
+      setMatchStatus(useMultiplayerStore.getState().matchStatus);
+    });
     return () => { mounted = false; };
-  }, [userId, initAuth]);
+  }, []);
 
-  if (!ready) return null;
+  if (matchStatus !== 'finished') return <Navigate to="/multiplayer" replace />;
   return <>{children}</>;
 }
 
@@ -79,13 +100,22 @@ export function AppRouter() {
       <AuthInitializer>
         <Routes>
           <Route element={<Layout />}>
-            <Route path="/" element={<Suspense fallback={<HomePageSkeleton />}><Home /></Suspense>} />
-            <Route path="/practice" element={<Suspense fallback={<PracticeModeSkeleton />}><PracticeMode /></Suspense>} />
+            <Route
+              path="/"
+              element={<Suspense fallback={<HomePageSkeleton />}><Home /></Suspense>}
+            />
+
+            <Route
+              path="/practice"
+              element={<Suspense fallback={<PracticeModeSkeleton />}><PracticeMode /></Suspense>}
+            />
             <Route
               path="/practice/session"
               element={
                 <SessionGuard>
-                  <TestInterface />
+                  <Suspense fallback={<PracticeModeSkeleton />}>
+                    <TestInterface />
+                  </Suspense>
                 </SessionGuard>
               }
             />
@@ -93,28 +123,45 @@ export function AppRouter() {
               path="/practice/results"
               element={
                 <ResultsGuard>
-                  <ResultScreen />
+                  <Suspense fallback={<PracticeModeSkeleton />}>
+                    <ResultScreen />
+                  </Suspense>
                 </ResultsGuard>
               }
             />
-            <Route path="/sheets" element={<Suspense fallback={<SheetGeneratorSkeleton />}><SheetGenerator /></Suspense>} />
-            <Route path="/levels" element={<Suspense fallback={<LevelGuideSkeleton />}><LevelGuide /></Suspense>} />
 
-            <Route path="/multiplayer" element={<Suspense fallback={<MultiplayerHomeSkeleton />}><MultiplayerHome /></Suspense>} />
+            <Route
+              path="/sheets"
+              element={<Suspense fallback={<SheetGeneratorSkeleton />}><SheetGenerator /></Suspense>}
+            />
+
+            <Route
+              path="/levels"
+              element={<Suspense fallback={<LevelGuideSkeleton />}><LevelGuide /></Suspense>}
+            />
+
+            <Route
+              path="/multiplayer"
+              element={<Suspense fallback={<MultiplayerHomeSkeleton />}><MultiplayerHome /></Suspense>}
+            />
             <Route
               path="/multiplayer/game/:matchId"
               element={
-                <MultiplayerGameGuard>
-                  <Suspense fallback={<MultiplayerGameSkeleton />}><MultiplayerGame /></Suspense>
-                </MultiplayerGameGuard>
+                <Suspense fallback={<MultiplayerGameSkeleton />}>
+                  <MultiplayerGameGuard>
+                    <MultiplayerGame />
+                  </MultiplayerGameGuard>
+                </Suspense>
               }
             />
             <Route
               path="/multiplayer/results"
               element={
-                <MultiplayerResultsGuard>
-                  <Suspense fallback={<MultiplayerResultsSkeleton />}><MultiplayerResults /></Suspense>
-                </MultiplayerResultsGuard>
+                <Suspense fallback={<MultiplayerResultsSkeleton />}>
+                  <MultiplayerResultsGuard>
+                    <MultiplayerResults />
+                  </MultiplayerResultsGuard>
+                </Suspense>
               }
             />
           </Route>

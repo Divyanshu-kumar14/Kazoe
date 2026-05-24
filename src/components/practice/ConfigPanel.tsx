@@ -48,7 +48,6 @@ export const ConfigPanel = memo(function ConfigPanel() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
 
-      {/* ─── Left: Configuration ─── */}
       <div className="md:col-span-3 flex flex-col gap-6">
         <LevelSelector
           level={level}
@@ -95,7 +94,6 @@ export const ConfigPanel = memo(function ConfigPanel() {
         </div>
       </div>
 
-      {/* ─── Right: Sheet Preview + Begin ─── */}
       <div className="md:col-span-2 flex flex-col gap-6">
         <div className="card p-6 flex flex-col items-center gap-4">
           <h2

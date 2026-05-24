@@ -41,7 +41,6 @@ export function SheetPrintPages({
           </div>
 
           {isMultDiv ? (
-            /* ── Mult/Div print: list of horizontal expressions ── */
             <div
               style={{
                 flex: 1,
@@ -132,7 +131,6 @@ export function SheetPrintPages({
               })}
             </div>
           ) : (
-            /* ── Add/Sub print: 2×2 question grid ── */
             <div
               className="sheet-page-grid"
               style={{

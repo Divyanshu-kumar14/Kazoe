@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
+import { memo } from 'react';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
@@ -9,7 +10,7 @@ const NAV_LINKS = [
   { to: '/levels', label: 'Level Guide' },
 ];
 
-export function Layout() {
+export const Layout = memo(function Layout() {
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const location = useLocation();
@@ -20,7 +21,6 @@ export function Layout() {
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-on-surface)' }}>
       
-      {/* ─── Skip to content link ─── */}
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-primary focus:text-on-primary focus:text-sm focus:font-bold focus:no-underline"
@@ -28,7 +28,6 @@ export function Layout() {
         Skip to content
       </a>
 
-      {/* ─── Top Navigation Bar ─── */}
       {!isTestSession && (
         <header
           className="fixed top-4 left-4 right-4 z-[var(--z-nav)] backdrop-blur-md rounded-xl"
@@ -148,12 +147,10 @@ export function Layout() {
         </header>
       )}
 
-      {/* ─── Main Content ─── */}
       <main id="main-content" className={`flex-1 flex flex-col ${!isTestSession ? 'pt-20 max-md:pt-24' : ''}`}>
         <Outlet />
       </main>
 
-      {/* ─── Footer ─── */}
       {!isTestSession && (
         <footer
           className="mt-auto"
@@ -184,4 +181,4 @@ export function Layout() {
       )}
     </div>
   );
-}
+});

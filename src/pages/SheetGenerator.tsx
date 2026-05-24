@@ -273,7 +273,6 @@ export default function SheetGenerator() {
                 ))}
               </div>
             ) : (
-              /* ── Add/Sub: vertical operand columns ── */
               <div
                 className="grid gap-4 sheet-screen-grid"
                 style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
