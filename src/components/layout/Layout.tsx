@@ -4,9 +4,11 @@ import { memo } from 'react';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
+  { to: '/challenge', label: 'Daily Challenge' },
+  { to: '/analytics', label: 'Analytics' },
   { to: '/practice', label: 'Practice Mode' },
   { to: '/multiplayer', label: 'Multiplayer' },
-  { to: '/sheets', label: 'Sheet Generator' },
+  { to: '/sheets', label: 'Sheets' },
   { to: '/levels', label: 'Level Guide' },
 ];
 
@@ -15,8 +17,9 @@ export const Layout = memo(function Layout() {
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const location = useLocation();
 
-  // Hide navbar during active test session
-  const isTestSession = location.pathname === '/practice/session';
+  // Hide navbar during active test or challenge session
+  const hideNavPaths = ['/practice/session', '/challenge/session'];
+  const isTestSession = hideNavPaths.includes(location.pathname);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-on-surface)' }}>

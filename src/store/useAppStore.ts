@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { SOROBAN_LEVELS, type LevelConfig } from '../utils/levelConfig';
 import { generateSeed, type Question, generateQuestions } from '../utils/questionGenerator';
 import { computeSessionResult, type SessionResult, type Grade } from '../utils/grading';
+import { getDailySeed } from '../utils/dailyChallenge';
 
 function getInitialTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'light';
@@ -21,6 +22,8 @@ export interface HistoryEntry {
   level: number;
   result: SessionResult;
   grade: Grade;
+  questionType?: 'add_sub' | 'multiplication' | 'division';
+  isDailyChallenge?: boolean;
 }
 
 const HISTORY_KEY = 'kazoe-history';
@@ -111,6 +114,8 @@ interface PracticeConfig {
   seed: string;
   overrides: Partial<LevelConfig>; // manual param overrides over level preset
   questionType: 'add_sub' | 'multiplication' | 'division';
+  adaptiveDifficulty?: boolean;
+  source?: 'practice' | 'challenge';
 }
 
 interface SessionState {
@@ -121,6 +126,8 @@ interface SessionState {
   startedAt: number | null;
   finishedAt: number | null;
 }
+
+const INITIAL_BUFFER_SIZE = 50;
 
 interface AppStore {
   practiceConfig: PracticeConfig;
@@ -134,6 +141,8 @@ interface AppStore {
   startSession: () => void;
   submitAnswer: (answer: number | 'skipped') => void;
   endSession: () => void;
+  extendQuestions: (newQuestions: Question[]) => void;
+  startChallengeSession: () => void;
   saveMultiplayerMatch: (entry: MultiplayerHistoryEntry) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
@@ -220,6 +229,8 @@ export const useAppStore = create<AppStore>((set, get) => {
       level: state.practiceConfig.level,
       result,
       grade: result.grade,
+      questionType: state.practiceConfig.questionType,
+      isDailyChallenge: state.practiceConfig.source === 'challenge',
     };
     const updated = [...state.history, entry];
     saveHistory(updated);
@@ -239,6 +250,8 @@ export const useAppStore = create<AppStore>((set, get) => {
       seed: generateSeed(),
       overrides: {},
       questionType: 'add_sub',
+      adaptiveDifficulty: false,
+      source: 'practice',
       ...readURLParams(),
     },
     session: {
@@ -256,7 +269,6 @@ export const useAppStore = create<AppStore>((set, get) => {
 
     saveMultiplayerMatch: (entry) => {
       set((state) => {
-        // Prevent duplicate entries for the same match ID
         if (state.multiplayerHistory.some(h => h.id === entry.id)) return state;
         const newHistory = [...state.multiplayerHistory, entry];
         saveMultiplayerHistory(newHistory);
@@ -288,10 +300,54 @@ export const useAppStore = create<AppStore>((set, get) => {
         ...SOROBAN_LEVELS[practiceConfig.level]!,
         ...practiceConfig.overrides,
       };
-      const maxQuestions = Math.max(50, Math.ceil(practiceConfig.timeLimitSeconds * 2));
-      const questions = generateQuestions(config, maxQuestions, seed, practiceConfig.questionType);
+
+      if (practiceConfig.adaptiveDifficulty) {
+        // Adaptive mode: generate initial buffer
+        const questions = generateQuestions(config, INITIAL_BUFFER_SIZE, seed, practiceConfig.questionType);
+        set((s) => ({
+          practiceConfig: { ...s.practiceConfig, seed },
+          session: {
+            status: 'active',
+            questions,
+            currentIndex: 0,
+            answers: new Array(questions.length).fill(null),
+            startedAt: Date.now(),
+            finishedAt: null,
+          }
+        }));
+      } else {
+        // Standard mode: generate all questions upfront
+        const maxQuestions = Math.max(50, Math.ceil(practiceConfig.timeLimitSeconds * 2));
+        const questions = generateQuestions(config, maxQuestions, seed, practiceConfig.questionType);
+        set((s) => ({
+          practiceConfig: { ...s.practiceConfig, seed },
+          session: {
+            status: 'active',
+            questions,
+            currentIndex: 0,
+            answers: new Array(questions.length).fill(null),
+            startedAt: Date.now(),
+            finishedAt: null,
+          }
+        }));
+      }
+    },
+
+    startChallengeSession: () => {
+      const { practiceConfig } = get();
+      const dailySeed = getDailySeed();
+      const config = SOROBAN_LEVELS[practiceConfig.level]!;
+      const maxQuestions = Math.max(50, Math.ceil(120 * 2));
+      const questions = generateQuestions(config, maxQuestions, dailySeed, practiceConfig.questionType);
       set((s) => ({
-        practiceConfig: { ...s.practiceConfig, seed },
+        practiceConfig: {
+          ...s.practiceConfig,
+          seed: dailySeed,
+          source: 'challenge',
+          timeLimitSeconds: 120,
+          adaptiveDifficulty: false,
+          overrides: {},
+        },
         session: {
           status: 'active',
           questions,
@@ -306,25 +362,56 @@ export const useAppStore = create<AppStore>((set, get) => {
     submitAnswer: (answer) => {
       const state = get();
       if (state.session.status === 'finished') return;
+
+      const isAdaptive = state.practiceConfig.adaptiveDifficulty;
       const answers = [...state.session.answers];
       answers[state.session.currentIndex] = answer;
       const nextIndex = state.session.currentIndex + 1;
-      const finished = nextIndex >= state.session.questions.length;
-      const finishedAt = finished ? Date.now() : null;
 
-      if (finished && state.session.startedAt && finishedAt) {
-        finalizeSession(state, answers, state.session, finishedAt);
-      } else {
+      if (isAdaptive) {
+        // Adaptive mode: never auto-finish from questions count.
+        // The session ends only via time-up (endSession) or manual end.
+        // The useAdaptiveSession hook manages buffer extension at the correct difficulty.
         set({
           session: {
             ...state.session,
             answers,
             currentIndex: nextIndex,
-            status: finished ? 'finished' : 'active',
-            finishedAt,
+            status: 'active',
           },
         });
+      } else {
+        // Standard mode: auto-finish when all questions answered
+        const finished = nextIndex >= state.session.questions.length;
+        const finishedAt = finished ? Date.now() : null;
+
+        if (finished && state.session.startedAt && finishedAt) {
+          finalizeSession(state, answers, state.session, finishedAt);
+        } else {
+          set({
+            session: {
+              ...state.session,
+              answers,
+              currentIndex: nextIndex,
+              status: finished ? 'finished' : 'active',
+              finishedAt,
+            },
+          });
+        }
       }
+    },
+
+    extendQuestions: (newQuestions) => {
+      set((state) => {
+        if (state.session.status !== 'active') return state;
+        return {
+          session: {
+            ...state.session,
+            questions: [...state.session.questions, ...newQuestions],
+            answers: [...state.session.answers, ...new Array(newQuestions.length).fill(null)],
+          },
+        };
+      });
     },
 
     endSession: () => {

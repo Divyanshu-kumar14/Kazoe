@@ -4,6 +4,8 @@ import { useAppStore } from '../../store/useAppStore';
 import { useNavigate } from 'react-router-dom';
 import { useSound } from '../../hooks/useSound';
 import { useGameTimer } from '../../hooks/useGameTimer';
+import { useAdaptiveSession } from '../../hooks/useAdaptiveSession';
+import { completeDailyChallenge } from '../../utils/dailyChallenge';
 import { Countdown } from './Countdown';
 import { PausedOverlay } from './PausedOverlay';
 
@@ -12,16 +14,29 @@ import { PausedOverlay } from './PausedOverlay';
 interface TopBarProps {
   timeLeft: number;
   isWarning: boolean;
-  timeLimitSeconds: number;
   level: number;
   currentIndex: number;
   onTogglePause: () => void;
+  isAdaptive: boolean;
+  adaptiveOffset: number;
 }
 
-const TopBar = memo(function TopBar({ timeLeft, isWarning, level, currentIndex, onTogglePause }: TopBarProps): ReactElement {
+const TopBar = memo(function TopBar({ timeLeft, isWarning, level, currentIndex, onTogglePause, isAdaptive, adaptiveOffset }: TopBarProps): ReactElement {
   return (
     <div style={topBarContainer}>
       <LevelBadge level={level} />
+      {isAdaptive && (
+        <span
+          className="px-2 py-0.5 rounded text-[10px] font-bold"
+          style={{
+            fontFamily: 'var(--font-mono)',
+            backgroundColor: adaptiveOffset > 0 ? 'var(--color-primary-container)' : adaptiveOffset < 0 ? 'var(--color-secondary-container)' : 'var(--color-surface-container)',
+            color: adaptiveOffset > 0 ? 'var(--color-primary)' : adaptiveOffset < 0 ? 'var(--color-on-secondary-container)' : 'var(--color-on-surface-variant)',
+          }}
+        >
+          {adaptiveOffset > 0 ? `+${adaptiveOffset}` : adaptiveOffset < 0 ? `${adaptiveOffset}` : 'base'}
+        </span>
+      )}
       <TimerBadge timeLeft={timeLeft} isWarning={isWarning} />
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <span style={doneLabel}>{currentIndex} done</span>
@@ -200,14 +215,26 @@ export function TestInterface(): ReactElement | null {
   const questions = useAppStore((s) => s.session.questions);
   const timeLimitSeconds = useAppStore((s) => s.practiceConfig.timeLimitSeconds);
   const level = useAppStore((s) => s.practiceConfig.level);
+  const source = useAppStore((s) => s.practiceConfig.source);
   const submitAnswer = useAppStore((s) => s.submitAnswer);
   const endSession = useAppStore((s) => s.endSession);
   const navigate = useNavigate();
 
+  // Adaptive difficulty hook
+  const { getCurrentOffset, isAdaptive } = useAdaptiveSession();
+
   const handleTimeUp = useCallback(() => {
     endSession();
-    navigate('/practice/results', { replace: true });
-  }, [endSession, navigate]);
+    // History entry now exists — mark daily challenge complete
+    if (source === 'challenge') {
+      const latestEntry = useAppStore.getState().history.filter(h => h.isDailyChallenge).sort((a, b) => b.timestamp - a.timestamp)[0];
+      if (latestEntry) {
+        completeDailyChallenge(latestEntry.id);
+      }
+    }
+    const dest = source === 'challenge' ? '/challenge/results' : '/practice/results';
+    navigate(dest, { replace: true });
+  }, [endSession, navigate, source]);
 
   const [phase, setPhase] = useState<'countdown' | 'playing' | 'paused'>('countdown');
   const { timeLeft } = useGameTimer(timeLimitSeconds, phase, handleTimeUp);
@@ -233,9 +260,19 @@ export function TestInterface(): ReactElement | null {
 
   useEffect(() => {
     if (sessionStatus === 'finished') {
-      navigate('/practice/results', { replace: true });
+      // If this is a daily challenge, mark it as completed
+      if (source === 'challenge') {
+        const latestEntry = useAppStore.getState().history
+          .filter(h => h.isDailyChallenge)
+          .sort((a, b) => b.timestamp - a.timestamp)[0];
+        if (latestEntry) {
+          completeDailyChallenge(latestEntry.id);
+        }
+      }
+      const resultsDest = source === 'challenge' ? '/challenge/results' : '/practice/results';
+      navigate(resultsDest, { replace: true });
     }
-  }, [sessionStatus, navigate]);
+  }, [sessionStatus, navigate, source]);
 
   useEffect(() => {
     return () => {
@@ -301,7 +338,8 @@ export function TestInterface(): ReactElement | null {
   const startPlaying = useCallback(() => setPhase('playing'), []);
 
   if (phase === 'countdown') return <Countdown onDone={startPlaying} />;
-  if (phase === 'paused') return <PausedOverlay onResume={togglePause} onQuit={() => { endSession(); navigate('/practice'); }} />;
+  const dest = source === 'challenge' ? '/challenge' : '/practice';
+  if (phase === 'paused') return <PausedOverlay onResume={togglePause} onQuit={() => { endSession(); navigate(dest); }} />;
 
   const currentQuestion = questions[currentIndex];
   if (!currentQuestion) return null;
@@ -313,7 +351,7 @@ export function TestInterface(): ReactElement | null {
 
   return (
     <div className="animate-fade-in" style={pageContainer}>
-      <TopBar timeLeft={timeLeft} isWarning={isWarning} timeLimitSeconds={timeLimitSeconds} level={level} currentIndex={currentIndex} onTogglePause={togglePause} />
+      <TopBar timeLeft={timeLeft} isWarning={isWarning} level={level} currentIndex={currentIndex} onTogglePause={togglePause} isAdaptive={isAdaptive} adaptiveOffset={getCurrentOffset()} />
       <ProgressBar progress={progress} />
 
       <div className="w-full max-w-[420px] rounded-2xl overflow-hidden p-5 sm:p-7 md:p-8" style={questionCard}>

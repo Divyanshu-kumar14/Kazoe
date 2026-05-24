@@ -73,9 +73,12 @@ export function ResultScreen() {
   const questions = useAppStore((s) => s.session.questions);
   const level = useAppStore((s) => s.practiceConfig.level);
   const overrides = useAppStore((s) => s.practiceConfig.overrides);
+  const source = useAppStore((s) => s.practiceConfig.source);
   const navigate = useNavigate();
   const { playComplete } = useSound();
   const [showReview, setShowReview] = useState(false);
+
+  const isChallenge = source === 'challenge';
 
   const result = useMemo(() => {
     if (!startedAt || !finishedAt) return null;
@@ -136,7 +139,7 @@ export function ResultScreen() {
               margin: 0,
             }}
           >
-            Session Complete
+            {isChallenge ? 'Daily Challenge Complete' : 'Session Complete'}
           </h1>
 
           <div
@@ -289,24 +292,47 @@ export function ResultScreen() {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <button type="button"
-            onClick={() => navigate('/practice')}
-            className="btn-secondary flex-1 justify-center py-3"
-            style={{ fontWeight: 700 }}
-          >
-            Change Settings
-          </button>
-          <button type="button"
-            onClick={() => {
-              useAppStore.getState().startSession();
-              navigate('/practice/session', { replace: true });
-            }}
-            className="btn-primary flex-1 justify-center py-3"
-            style={{ fontWeight: 700 }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">replay</span>
-            Try Again
-          </button>
+          {isChallenge ? (
+            <>
+              <button type="button"
+                onClick={() => navigate('/challenge')}
+                className="btn-secondary flex-1 justify-center py-3"
+                style={{ fontWeight: 700 }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">emoji_events</span>
+                Challenge Home
+              </button>
+              <button type="button"
+                onClick={() => navigate('/')}
+                className="btn-primary flex-1 justify-center py-3"
+                style={{ fontWeight: 700 }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">home</span>
+                Dashboard
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button"
+                onClick={() => navigate('/practice')}
+                className="btn-secondary flex-1 justify-center py-3"
+                style={{ fontWeight: 700 }}
+              >
+                Change Settings
+              </button>
+              <button type="button"
+                onClick={() => {
+                  useAppStore.getState().startSession();
+                  navigate('/practice/session', { replace: true });
+                }}
+                className="btn-primary flex-1 justify-center py-3"
+                style={{ fontWeight: 700 }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">replay</span>
+                Try Again
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
