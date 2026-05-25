@@ -3,12 +3,17 @@ import { SOROBAN_LEVELS, type LevelConfig } from '../utils/levelConfig';
 import { generateSeed, type Question, generateQuestions } from '../utils/questionGenerator';
 import { computeSessionResult, type SessionResult, type Grade } from '../utils/grading';
 import { getDailySeed } from '../utils/dailyChallenge';
+import { loadItem, saveItem } from '../lib/storage';
 
 function getInitialTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'light';
   const saved = localStorage.getItem('kazoe-theme');
   if (saved === 'dark' || saved === 'light') return saved;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  } catch {
+    return 'light'; // Test environments may not have matchMedia
+  }
 }
 
 const initialTheme = getInitialTheme();
@@ -29,16 +34,11 @@ export interface HistoryEntry {
 const HISTORY_KEY = 'kazoe-history';
 
 function loadHistory(): HistoryEntry[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  return loadItem<HistoryEntry[]>(HISTORY_KEY, []);
 }
 
 function saveHistory(history: HistoryEntry[]) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  saveItem(HISTORY_KEY, history);
 }
 
 export interface MultiplayerHistoryEntry {
@@ -57,16 +57,11 @@ export interface MultiplayerHistoryEntry {
 const MP_HISTORY_KEY = 'kazoe-multiplayer-history';
 
 function loadMultiplayerHistory(): MultiplayerHistoryEntry[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(MP_HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  return loadItem<MultiplayerHistoryEntry[]>(MP_HISTORY_KEY, []);
 }
 
 function saveMultiplayerHistory(history: MultiplayerHistoryEntry[]) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(MP_HISTORY_KEY, JSON.stringify(history));
+  saveItem(MP_HISTORY_KEY, history);
 }
 
 export interface Badge {
@@ -93,9 +88,8 @@ const ACHIEVEMENTS_KEY = 'kazoe-achievements';
 function loadAchievements(): Badge[] {
   if (typeof window === 'undefined') return ALL_BADGES.map(b => ({ ...b, unlocked: false, unlockedAt: null }));
   try {
-    const raw = localStorage.getItem(ACHIEVEMENTS_KEY);
-    if (raw) {
-      const saved = JSON.parse(raw) as Badge[];
+    const saved = loadItem<Badge[]>(ACHIEVEMENTS_KEY, []);
+    if (saved.length > 0) {
       const savedMap = new Map(saved.map(s => [s.id, s]));
       return ALL_BADGES.map(b => savedMap.get(b.id) || { ...b, unlocked: false, unlockedAt: null });
     }
@@ -104,8 +98,48 @@ function loadAchievements(): Badge[] {
 }
 
 function saveAchievements(badges: Badge[]) {
+  saveItem(ACHIEVEMENTS_KEY, badges);
+}
+
+const SESSION_KEY = 'kazoe-active-session';
+
+interface SavedSessionData {
+  session: SessionState;
+  practiceConfig: PracticeConfig;
+}
+
+function saveSessionToStorage(data: { session: SessionState; practiceConfig: PracticeConfig }) {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(badges));
+  if (data.session.status !== 'active') return;
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  } catch {
+    // Quota exceeded — silently drop
+  }
+}
+
+function clearSessionStorage() {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(SESSION_KEY);
+}
+
+function restoreSessionFromStorage(): SavedSessionData | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as SavedSessionData;
+    if (saved.session.status !== 'active') return null;
+    if (!saved.session.startedAt || Date.now() - saved.session.startedAt > 3600000) {
+      sessionStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    if (!saved.session.questions || saved.session.questions.length === 0) return null;
+    return saved;
+  } catch {
+    sessionStorage.removeItem(SESSION_KEY);
+    return null;
+  }
 }
 
 interface PracticeConfig {
@@ -116,6 +150,7 @@ interface PracticeConfig {
   questionType: 'add_sub' | 'multiplication' | 'division';
   adaptiveDifficulty?: boolean;
   focusMode?: boolean;
+  dictation?: boolean;
   source?: 'practice' | 'challenge';
 }
 
@@ -235,17 +270,29 @@ export const useAppStore = create<AppStore>((set, get) => {
     };
     const updated = [...state.history, entry];
     saveHistory(updated);
-    const updatedBadges = computeBadgeUpdates(state.badges, updated);
-    saveAchievements(updatedBadges);
+
+    // Update UI immediately — show the session result without delay
     set({
       session: { ...session, status: 'finished', finishedAt },
       history: updated,
-      badges: updatedBadges,
+    });
+    clearSessionStorage();
+
+    // Defer badge computation to avoid blocking the result screen render.
+    // Badge scanning accesses all history — with hundreds of entries this
+    // is fast, but it shouldn't block the critical path.
+    queueMicrotask(() => {
+      const currentState = get();
+      const updatedBadges = computeBadgeUpdates(currentState.badges, currentState.history);
+      saveAchievements(updatedBadges);
+      set({ badges: updatedBadges });
     });
   }
 
+  const restored = restoreSessionFromStorage();
+
   return {
-    practiceConfig: {
+    practiceConfig: restored?.practiceConfig ?? {
       level: 1,
       timeLimitSeconds: 120,
       seed: generateSeed(),
@@ -253,10 +300,11 @@ export const useAppStore = create<AppStore>((set, get) => {
       questionType: 'add_sub',
       adaptiveDifficulty: false,
       focusMode: false,
+      dictation: false,
       source: 'practice',
       ...readURLParams(),
     },
-    session: {
+    session: restored?.session ?? {
       status: 'idle',
       questions: [],
       currentIndex: 0,
@@ -317,6 +365,7 @@ export const useAppStore = create<AppStore>((set, get) => {
             finishedAt: null,
           }
         }));
+        saveSessionToStorage({ session: get().session, practiceConfig: get().practiceConfig });
       } else {
         // Standard mode: generate all questions upfront
         const maxQuestions = Math.max(50, Math.ceil(practiceConfig.timeLimitSeconds * 2));
@@ -332,6 +381,7 @@ export const useAppStore = create<AppStore>((set, get) => {
             finishedAt: null,
           }
         }));
+        saveSessionToStorage({ session: get().session, practiceConfig: get().practiceConfig });
       }
     },
 
@@ -359,6 +409,7 @@ export const useAppStore = create<AppStore>((set, get) => {
           finishedAt: null,
         }
       }));
+      saveSessionToStorage({ session: get().session, practiceConfig: get().practiceConfig });
     },
 
     submitAnswer: (answer) => {
@@ -382,6 +433,7 @@ export const useAppStore = create<AppStore>((set, get) => {
             status: 'active',
           },
         });
+        saveSessionToStorage({ session: get().session, practiceConfig: get().practiceConfig });
       } else {
         // Standard mode: auto-finish when all questions answered
         const finished = nextIndex >= state.session.questions.length;
@@ -399,11 +451,15 @@ export const useAppStore = create<AppStore>((set, get) => {
               finishedAt,
             },
           });
+          if (!finished) {
+            saveSessionToStorage({ session: get().session, practiceConfig: get().practiceConfig });
+          }
         }
       }
     },
 
     extendQuestions: (newQuestions) => {
+      const wasActive = get().session.status === 'active';
       set((state) => {
         if (state.session.status !== 'active') return state;
         return {
@@ -414,6 +470,9 @@ export const useAppStore = create<AppStore>((set, get) => {
           },
         };
       });
+      if (wasActive) {
+        saveSessionToStorage({ session: get().session, practiceConfig: get().practiceConfig });
+      }
     },
 
     endSession: () => {
@@ -427,6 +486,7 @@ export const useAppStore = create<AppStore>((set, get) => {
         }
       }
       set((s) => ({ session: { ...s.session, status: 'finished', finishedAt } }));
+      clearSessionStorage();
     },
 
     clearHistory: () => {

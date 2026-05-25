@@ -66,7 +66,7 @@ export default function ActivityHeatmap({ data }: Props) {
               <div
                 key={o}
                 className="size-3 rounded-sm"
-                style={{ backgroundColor: `rgba(0, 89, 92, ${o})` }}
+                style={{ backgroundColor: `rgba(var(--color-primary-rgb), ${o})` }}
               />
             ))}
           </div>

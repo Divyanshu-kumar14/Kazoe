@@ -2,12 +2,12 @@ import { useMemo, memo } from 'react';
 import { SOROBAN_LEVELS } from '../utils/levelConfig';
 
 function getRank(level: number) {
-  if (level <= 2) return { label: 'Beginner', color: '#6e7979', bg: '#ebe8e3' };
-  if (level <= 4) return { label: 'Intermediate', color: '#00595c', bg: '#e0f5f5' };
-  if (level <= 6) return { label: 'Advanced', color: '#855300', bg: '#ffecd4' };
+  if (level <= 2) return { label: 'Beginner', color: 'var(--color-outline)', bg: 'var(--color-surface-container-high)' };
+  if (level <= 4) return { label: 'Intermediate', color: 'var(--color-primary)', bg: '#e0f5f5' };
+  if (level <= 6) return { label: 'Advanced', color: 'var(--color-secondary)', bg: '#ffecd4' };
   if (level <= 8) return { label: 'Expert', color: '#7b2d00', bg: '#ffe0cc' };
-  if (level <= 9) return { label: 'Master', color: '#ba1a1a', bg: '#ffdad6' };
-  return { label: 'Grandmaster', color: '#7b0012', bg: '#ffdad6' };
+  if (level <= 9) return { label: 'Master', color: 'var(--color-error)', bg: 'var(--color-error-container)' };
+  return { label: 'Grandmaster', color: '#7b0012', bg: 'var(--color-error-container)' };
 }
 
 function getRankIcon(level: number) {

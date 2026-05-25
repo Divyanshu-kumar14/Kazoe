@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { computeAnalytics } from '../utils/analytics';
+import { gradeColor } from '../utils/colors';
 import AccuracyTrendChart from '../components/analytics/AccuracyTrendChart';
 import LevelMasteryChart from '../components/analytics/LevelMasteryChart';
 import ActivityHeatmap from '../components/analytics/ActivityHeatmap';
@@ -12,16 +13,6 @@ export default function Analytics() {
   const analytics = useMemo(() => computeAnalytics(history), [history]);
 
   const hasData = history.length > 0;
-  const gradeColor = (grade: string) => {
-    switch (grade) {
-      case 'S': return '#f59e0b';
-      case 'A': return '#10b981';
-      case 'B': return '#3b82f6';
-      case 'C': return '#8b5cf6';
-      default: return '#6b7280';
-    }
-  };
-
   return (
     <div className="flex-1 animate-fade-in-up">
       <div className="max-w-[1200px] mx-auto px-6 py-10 flex flex-col gap-8">

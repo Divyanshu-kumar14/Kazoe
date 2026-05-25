@@ -12,7 +12,7 @@ import { RecentSessions } from '../components/home/RecentSessions';
 import { QuickLinks } from '../components/home/QuickLinks';
 import { getRank, getNextRank, computeStats, computeMultiplayerStats, DAILY_GOAL } from '../utils/stats';
 import { loadDailyChallengeStatus, getTodayDate } from '../utils/dailyChallenge';
-import type { Grade } from '../utils/grading';
+import { gradeColor } from '../utils/colors';
 
 export default function Home() {
   const history = useAppStore((s) => s.history);
@@ -169,16 +169,6 @@ export default function Home() {
       </div>
     </div>
   );
-}
-
-function gradeColor(grade: Grade) {
-  switch (grade) {
-    case 'S': return '#f59e0b';
-    case 'A': return '#10b981';
-    case 'B': return '#3b82f6';
-    case 'C': return '#8b5cf6';
-    default:  return '#6b7280';
-  }
 }
 
 function formatTimeAgo(timestamp: number): string {

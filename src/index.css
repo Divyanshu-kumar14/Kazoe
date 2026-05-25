@@ -78,6 +78,14 @@
   --skeleton-shine: #4a5568;
 }
 
+/* ─── RGB component variables for rgba() usage in JS ─── */
+:root {
+  --color-primary-rgb: 0, 89, 92;
+}
+.dark {
+  --color-primary-rgb: 129, 212, 216;
+}
+
 /* ─── Base styles ─── */
 *,
 *::before,

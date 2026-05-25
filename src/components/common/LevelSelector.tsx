@@ -61,7 +61,7 @@ export function LevelSelector({ level, onLevelChange }: LevelSelectorProps) {
                   : 'var(--color-on-surface)',
                 cursor: 'pointer',
                 boxShadow: isSelected
-                  ? '0 2px 8px rgba(0,89,92,0.25)'
+                  ? '0 2px 8px rgba(var(--color-primary-rgb), 0.25)'
                   : 'none',
               }}
             >

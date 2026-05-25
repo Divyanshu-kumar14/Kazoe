@@ -1,5 +1,10 @@
 import { requireSupabase } from './supabase';
 import type { Question } from '../utils/questionGenerator';
+import type {
+  CreateMatchReturns,
+  FinalizeMatchReturns,
+  MatchRow,
+} from './database.types';
 
 export interface MatchConfig {
   level: number;
@@ -29,36 +34,15 @@ export interface AnswerPayload {
   timeTaken: number;
 }
 
-const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
-function generateRoomCode(): string {
-  let code = '';
-  const array = new Uint8Array(6);
-  crypto.getRandomValues(array);
-  for (let i = 0; i < 6; i++) {
-    code += CODE_CHARS[array[i]! % CODE_CHARS.length];
-  }
-  return code;
-}
-
 export async function createPrivateMatch(
-  playerId: string,
-  questions: Question[],
   config: MatchConfig
 ): Promise<string> {
-  const code = generateRoomCode();
-
-  const { error } = await requireSupabase().from('matches').insert({
-    id: code,
-    status: 'waiting',
-    is_public: false,
-    player1_id: playerId,
-    questions,
-    config,
+  const { data, error } = await requireSupabase().rpc('create_match', {
+    p_config: config,
   });
 
   if (error) throw error;
-  return code;
+  return (data as CreateMatchReturns).match_id;
 }
 
 export async function joinPrivateMatch(
@@ -81,7 +65,7 @@ export async function joinPrivateMatch(
   }
 
   const match = Array.isArray(data) ? data[0] : data;
-  return match as unknown as Match;
+  return match as unknown as MatchRow as unknown as Match;
 }
 
 export async function subscribeToMatchUpdate(
@@ -99,7 +83,7 @@ export async function subscribeToMatchUpdate(
         filter: `id=eq.${matchId}`,
       },
       (payload) => {
-        onUpdate(payload.new as unknown as Match);
+        onUpdate(payload.new as MatchRow as unknown as Match);
       }
     )
     .subscribe();
@@ -107,19 +91,13 @@ export async function subscribeToMatchUpdate(
   return channel;
 }
 
-export interface FinalizeResult {
-  winner_id: string | null;
-  decided_by: 'correct_count' | 'accuracy' | 'efficiency' | 'speed' | 'draw';
-  already_finished: boolean;
-}
-
-export async function finalizeMatch(matchId: string): Promise<FinalizeResult> {
+export async function finalizeMatch(matchId: string): Promise<FinalizeMatchReturns> {
   const { data, error } = await requireSupabase().rpc('finalize_match', {
     match_id: matchId,
   });
 
   if (error) throw error;
-  return data as FinalizeResult;
+  return data as FinalizeMatchReturns;
 }
 
 export async function cleanupMatch(matchId: string) {

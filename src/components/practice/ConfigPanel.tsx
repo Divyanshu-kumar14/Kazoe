@@ -16,6 +16,7 @@ export const ConfigPanel = memo(function ConfigPanel() {
   const questionType = useAppStore((s) => s.practiceConfig.questionType);
   const adaptiveDifficulty = useAppStore((s) => s.practiceConfig.adaptiveDifficulty) ?? false;
   const focusMode = useAppStore((s) => s.practiceConfig.focusMode) ?? false;
+  const dictation = useAppStore((s) => s.practiceConfig.dictation) ?? false;
   const setConfig = useAppStore((s) => s.setPracticeConfig);
   const startSession = useAppStore((s) => s.startSession);
   const navigate = useNavigate();
@@ -117,6 +118,36 @@ export const ConfigPanel = memo(function ConfigPanel() {
               </div>
             </label>
           </div>
+
+          {questionType === 'add_sub' && (
+            <div className="card p-4 flex flex-col gap-3">
+              <span className="label-caps">Dictation</span>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div
+                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  style={{
+                    backgroundColor: dictation ? 'var(--color-primary)' : 'var(--color-surface-container-high)',
+                  }}
+                  onClick={() => setConfig({ dictation: !dictation })}
+                >
+                  <span
+                    className="inline-block size-5 rounded-full bg-white transition-transform shadow-sm"
+                    style={{ transform: dictation ? 'translateX(22px)' : 'translateX(2px)' }}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold" style={{ color: 'var(--color-on-surface)' }}>
+                    Dictation Mode
+                  </span>
+                  <span className="text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>
+                    {dictation
+                      ? 'Voice reads questions aloud — answer without seeing the problem'
+                      : 'Listen to questions spoken aloud (requires browser TTS support)'}
+                  </span>
+                </div>
+              </label>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <DurationSlider

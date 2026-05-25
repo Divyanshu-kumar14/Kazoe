@@ -367,7 +367,7 @@ export default memo(function MultiplayerGame() {
                   color: inputValue !== '' ? 'var(--color-on-primary)' : 'var(--color-outline)',
                   cursor: inputValue !== '' ? 'pointer' : 'not-allowed',
                   opacity: inputValue !== '' ? 1 : 0.5,
-                  boxShadow: inputValue !== '' ? '0 2px 8px rgba(0,89,92,0.2)' : 'none',
+                  boxShadow: inputValue !== '' ? '0 2px 8px rgba(var(--color-primary-rgb), 0.2)' : 'none',
                 }}
               >
                 Submit answer

@@ -12,16 +12,9 @@ import {
   cleanupMatch,
 } from '../lib/multiplayer';
 import { getProfile } from '../lib/profile';
-import { generateQuestions, generateSeed } from '../utils/questionGenerator';
-import { SOROBAN_LEVELS } from '../utils/levelConfig';
+
 
 const MULTIPLAYER_QUESTION_POOL = 60;
-
-function generateMultiplayerQuestions(config: MatchConfig): import('../utils/questionGenerator').Question[] {
-  const levelConfig = SOROBAN_LEVELS[config.level]!;
-  const seed = generateSeed();
-  return generateQuestions(levelConfig, MULTIPLAYER_QUESTION_POOL, seed, config.questionType);
-}
 
 export type MatchStatusValue =
   | 'idle'
@@ -76,14 +69,12 @@ export interface MultiplayerState {
     matchId: string;
     playerNumber: 1 | 2;
     latestAnswer: AnswerPayload;
-    playerScore: number;
     allAnswers: (AnswerPayload | null)[];
   } | null;
   scheduleProgressUpdate: (
     matchId: string,
     playerNumber: 1 | 2,
     latestAnswer: AnswerPayload,
-    playerScore: number,
     allAnswers: (AnswerPayload | null)[]
   ) => void;
   flushPendingProgress: () => Promise<void>;
@@ -152,8 +143,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     const { userId, multiplayerConfig } = get();
     if (!userId) throw new Error('Not authenticated');
 
-    const questions = generateMultiplayerQuestions(multiplayerConfig);
-    const code = await apiCreatePrivateMatch(userId, questions, multiplayerConfig);
+    const code = await apiCreatePrivateMatch(multiplayerConfig);
 
     set({
       matchId: code,
@@ -258,8 +248,6 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       }
     }
 
-    const playerScore = state.playerNumber === 1 ? newScores[0] : newScores[1];
-
     set({
       myAnswers,
       scores: newScores,
@@ -268,7 +256,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     });
 
     if (state.matchId && state.playerNumber) {
-      get().scheduleProgressUpdate(state.matchId, state.playerNumber, payload, playerScore, myAnswers);
+      get().scheduleProgressUpdate(state.matchId, state.playerNumber, payload, myAnswers);
     }
 
     return payload;
@@ -427,11 +415,11 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     });
   },
 
-  scheduleProgressUpdate: (matchId, playerNumber, latestAnswer, playerScore, allAnswers) => {
+  scheduleProgressUpdate: (matchId, playerNumber, latestAnswer, allAnswers) => {
     const state = get();
     if (state.progressTimeout) clearTimeout(state.progressTimeout);
 
-    const pendingProgress = { matchId, playerNumber, latestAnswer, playerScore, allAnswers };
+    const pendingProgress = { matchId, playerNumber, latestAnswer, allAnswers };
     const progressTimeout = setTimeout(async () => {
       const p = get().pendingProgress;
       set({ pendingProgress: null, progressTimeout: null });
@@ -445,7 +433,6 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
         const { error } = await requireSupabase().rpc('update_match_progress', {
           match_id: p.matchId,
           player_num: p.playerNumber,
-          player_score: p.playerScore,
           answers: submittedAnswers,
           player_done: false,
         });
@@ -479,7 +466,6 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       const { error } = await requireSupabase().rpc('update_match_progress', {
         match_id: p.matchId,
         player_num: p.playerNumber,
-        player_score: p.playerScore,
         answers: submittedAnswers,
         player_done: true,
       });
