@@ -1,4 +1,5 @@
 import type { LevelMastery } from '../../utils/analytics';
+import { gradeColor } from '../../utils/colors';
 
 interface Props {
   data: LevelMastery[];
@@ -8,16 +9,6 @@ const LEVEL_COLORS = [
   '#78909c', '#26a69a', '#42a5f5', '#ab47bc', '#ef5350',
   '#ff7043', '#ffa726', '#fdd835', '#66bb6a', '#29b6f6',
 ];
-
-function gradeColor(grade: string) {
-  switch (grade) {
-    case 'S': return '#f59e0b';
-    case 'A': return '#10b981';
-    case 'B': return '#3b82f6';
-    case 'C': return '#8b5cf6';
-    default: return '#6b7280';
-  }
-}
 
 export default function LevelMasteryChart({ data }: Props) {
   if (data.length === 0) {
