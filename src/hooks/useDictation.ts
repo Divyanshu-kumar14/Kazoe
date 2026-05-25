@@ -157,15 +157,85 @@ export function useDictation() {
     setSpeaking(false);
   }, [clearTimers]);
 
+  /**
+   * Speak operands via browser SpeechSynthesis (segment by segment).
+   * Caller must ensure window.speechSynthesis is available.
+   */
+  const speakViaSS = useCallback((operands: number[]) => {
+    window.speechSynthesis.resume();
+
+    const segments = buildOperandSegments(operands);
+    if (segments.length === 0) return;
+
+    let index = 0;
+
+    const speakNext = () => {
+      if (cancelledRef.current || !mountedRef.current) {
+        setSpeaking(false);
+        return;
+      }
+
+      if (index >= segments.length) {
+        setSpeaking(false);
+        return;
+      }
+
+      const text = segments[index]!;
+      const isLast = index === segments.length - 1;
+      const gap = isLast ? END_GAP_MS : SEGMENT_GAP_MS;
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.85;
+
+      // Pick the first English voice for consistent sound
+      const voices = window.speechSynthesis.getVoices();
+      const enVoice =
+        voices.find((v) => v.lang.startsWith('en')) ?? voices[0];
+      if (enVoice) utterance.voice = enVoice;
+
+      let settled = false;
+
+      const settle = (advance: boolean) => {
+        if (settled || cancelledRef.current || !mountedRef.current) return;
+        settled = true;
+        if (safetyRef.current) clearTimeout(safetyRef.current);
+        if (advance) {
+          index++;
+          timeoutRef.current = setTimeout(speakNext, gap);
+        } else {
+          setSpeaking(false);
+        }
+      };
+
+      utterance.onend = () => settle(true);
+      utterance.onerror = () => settle(true);
+
+      // Safety net: if onend never fires, force-advance
+      safetyRef.current = setTimeout(
+        () => settle(true),
+        SEGMENT_TIMEOUT_MS,
+      );
+
+      try {
+        window.speechSynthesis.speak(utterance);
+      } catch {
+        settle(true);
+      }
+    };
+
+    setSpeaking(true);
+    timeoutRef.current = setTimeout(speakNext, 200);
+  }, []);
+
   const speak = useCallback(
     (operands: number[]) => {
-      if (!usable) return;
+      if (!supported) return;
 
       stop();
       cancelledRef.current = false;
 
       if (nvidiaEnabled) {
-        // ── NVIDIA TTS engine ──
+        // ── NVIDIA TTS engine (with SpeechSynthesis fallback) ──
         const sentence = buildSentence(operands);
         if (!sentence.trim()) return;
 
@@ -173,6 +243,7 @@ export function useDictation() {
 
         const controller = new AbortController();
         abortRef.current = controller;
+        let fellBack = false;
 
         synthesizeSpeech(sentence, {}, controller.signal)
           .then((audioData) => {
@@ -181,79 +252,25 @@ export function useDictation() {
           })
           .catch((err: unknown) => {
             if (err instanceof DOMException && err.name === 'AbortError') return;
-            // API failed — silently fall through; user can tap replay
+            // NVIDIA API failed — fall back to browser SpeechSynthesis
+            console.warn('NVIDIA TTS failed, falling back to SpeechSynthesis');
+            fellBack = true;
+            speakViaSS(operands);
           })
           .finally(() => {
-            if (mountedRef.current && !cancelledRef.current) {
+            // Only set speaking=false here if we DIDN'T fall back to
+            // SpeechSynthesis (which manages its own speaking state).
+            if (mountedRef.current && !cancelledRef.current && !fellBack) {
               setSpeaking(false);
             }
           });
-      } else {
+      } else if (voicesReady) {
         // ── Browser SpeechSynthesis engine ──
-        window.speechSynthesis.resume();
-
-        const segments = buildOperandSegments(operands);
-        if (segments.length === 0) return;
-
-        let index = 0;
-
-        const speakNext = () => {
-          if (cancelledRef.current || !mountedRef.current) return;
-
-          if (index >= segments.length) {
-            setSpeaking(false);
-            return;
-          }
-
-          const text = segments[index]!;
-          const isLast = index === segments.length - 1;
-          const gap = isLast ? END_GAP_MS : SEGMENT_GAP_MS;
-
-          const utterance = new SpeechSynthesisUtterance(text);
-          utterance.rate = 0.85;
-
-          // Pick the first English voice for consistent sound
-          const voices = window.speechSynthesis.getVoices();
-          const enVoice =
-            voices.find((v) => v.lang.startsWith('en')) ?? voices[0];
-          if (enVoice) utterance.voice = enVoice;
-
-          let settled = false;
-
-          const settle = (advance: boolean) => {
-            if (settled || cancelledRef.current || !mountedRef.current) return;
-            settled = true;
-            if (safetyRef.current) clearTimeout(safetyRef.current);
-            if (advance) {
-              index++;
-              timeoutRef.current = setTimeout(speakNext, gap);
-            } else {
-              setSpeaking(false);
-            }
-          };
-
-          utterance.onend = () => settle(true);
-          utterance.onerror = () => settle(true);
-
-          // Safety net: if onend never fires, force-advance
-          safetyRef.current = setTimeout(
-            () => settle(true),
-            SEGMENT_TIMEOUT_MS,
-          );
-
-          try {
-            window.speechSynthesis.speak(utterance);
-          } catch {
-            settle(true);
-            return;
-          }
-        };
-
-        setSpeaking(true);
-        timeoutRef.current = setTimeout(speakNext, 200);
+        speakViaSS(operands);
       }
+      // If voices aren't ready yet, silently skip until they load
     },
-    [stop, usable, nvidiaEnabled],
+    [stop, supported, nvidiaEnabled, voicesReady, speakViaSS],
   );
 
   return { speak, stop, speaking, supported, usable };

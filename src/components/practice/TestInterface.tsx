@@ -334,19 +334,29 @@ export function TestInterface(): ReactElement | null {
   const inputValRef = useRef('');
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spokenForRef = useRef<number | null>(null);
   const { playCorrect, playWrong } = useSound();
 
   useEffect(() => { inputRef.current?.focus(); }, [currentIndex]);
 
   // Dictation: speak the current question aloud when advancing to it
+  // Must also wait for dictationUsable (voices loaded) before speaking
   useEffect(() => {
     if (!dictation || phase !== 'playing') return;
+
+    // Don't re-speak the same question (e.g. when voices load after first attempt)
+    if (currentIndex === spokenForRef.current) return;
+
+    // Wait for voices/SpeechSynthesis to be ready
+    if (!dictationUsable) return;
+
     const store = useAppStore.getState();
     const q = store.session.questions[store.session.currentIndex];
     if (q && q.operation === 'add_sub') {
       speak(q.operands);
+      spokenForRef.current = currentIndex;
     }
-  }, [currentIndex, dictation, phase, speak]);
+  }, [currentIndex, dictation, phase, speak, dictationUsable]);
 
   // Stop speech when pausing; cancel on unmount
   useEffect(() => {
