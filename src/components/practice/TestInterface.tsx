@@ -6,6 +6,7 @@ import { useSound } from '../../hooks/useSound';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { useAdaptiveSession } from '../../hooks/useAdaptiveSession';
 import { useFullscreen } from '../../hooks/useFullscreen';
+import { useDictation } from '../../hooks/useDictation';
 import { completeDailyChallenge } from '../../utils/dailyChallenge';
 import { Countdown } from './Countdown';
 import { PausedOverlay } from './PausedOverlay';
@@ -113,9 +114,58 @@ function ActionButtons({ canSubmit, onSubmit, onSkip }: ActionButtonsProps): Rea
   return (
     <div style={actionRow}>
       <button type="button" onClick={onSkip} className="skip-btn focus-ring" style={skipButton}>Skip</button>
-      <button type="button" onClick={onSubmit} disabled={!canSubmit} className="submit-btn focus-ring" style={{ ...submitButton, background: canSubmit ? 'var(--color-primary)' : 'var(--color-surface-container-high)', color: canSubmit ? 'var(--color-on-primary)' : 'var(--color-outline)', cursor: canSubmit ? 'pointer' : 'not-allowed', opacity: canSubmit ? 1 : 0.5, boxShadow: canSubmit ? '0 2px 8px rgba(0,89,92,0.2)' : 'none' }}>
+      <button type="button" onClick={onSubmit} disabled={!canSubmit} className="submit-btn focus-ring" style={{ ...submitButton, background: canSubmit ? 'var(--color-primary)' : 'var(--color-surface-container-high)', color: canSubmit ? 'var(--color-on-primary)' : 'var(--color-outline)', cursor: canSubmit ? 'pointer' : 'not-allowed', opacity: canSubmit ? 1 : 0.5, boxShadow: canSubmit ? '0 2px 8px rgba(var(--color-primary-rgb), 0.2)' : 'none' }}>
         Submit Answer
       </button>
+    </div>
+  );
+}
+
+interface DictationInputProps {
+  inputVal: string;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onInputChange: (val: string) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onReplay: () => void;
+  speaking: boolean;
+}
+
+function DictationInput({ inputVal, inputRef, onInputChange, onKeyDown, onReplay, speaking }: DictationInputProps): ReactElement {
+  return (
+    <div className="animate-fade-in" style={dictationContainer}>
+      <div style={dictationHint}>
+        <span className="material-symbols-outlined" style={{ fontSize: '20px', color: speaking ? 'var(--color-primary)' : 'var(--color-outline)' }} role="img" aria-hidden="true">
+          {speaking ? 'volume_up' : 'hearing'}
+        </span>
+        <span style={dictationHintText}>
+          {speaking ? 'Listening...' : 'Question ready'}
+        </span>
+      </div>
+      <div style={{ width: '100%', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <input
+          ref={inputRef}
+          type="number"
+          inputMode="numeric"
+          value={inputVal}
+          aria-label="Your Answer"
+          onChange={(e) => onInputChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="Type your answer"
+          autoComplete="off"
+          style={{ ...answerInputBase, textAlign: 'center', flex: 1 }}
+          onFocus={(e) => { e.target.style.boxShadow = '0 0 0 2px var(--color-primary)'; }}
+          onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
+        />
+        <button
+          type="button"
+          onClick={onReplay}
+          aria-label="Replay question"
+          title="Replay question"
+          style={replayButton}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '22px' }} role="img" aria-hidden="true">repeat</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -234,12 +284,16 @@ export function TestInterface(): ReactElement | null {
   const level = useAppStore((s) => s.practiceConfig.level);
   const source = useAppStore((s) => s.practiceConfig.source);
   const focusMode = useAppStore((s) => s.practiceConfig.focusMode) ?? false;
+  const dictation = useAppStore((s) => s.practiceConfig.dictation) ?? false;
   const submitAnswer = useAppStore((s) => s.submitAnswer);
   const endSession = useAppStore((s) => s.endSession);
   const navigate = useNavigate();
 
   // Adaptive difficulty hook
   const { getCurrentOffset, isAdaptive } = useAdaptiveSession();
+
+  // Dictation hook
+  const { speak, stop: stopDictation, speaking, usable: dictationUsable } = useDictation();
 
   const [phase, setPhase] = useState<'countdown' | 'playing' | 'paused'>('countdown');
 
@@ -283,6 +337,24 @@ export function TestInterface(): ReactElement | null {
   const { playCorrect, playWrong } = useSound();
 
   useEffect(() => { inputRef.current?.focus(); }, [currentIndex]);
+
+  // Dictation: speak the current question aloud when advancing to it
+  useEffect(() => {
+    if (!dictation || phase !== 'playing') return;
+    const store = useAppStore.getState();
+    const q = store.session.questions[store.session.currentIndex];
+    if (q && q.operation === 'add_sub') {
+      speak(q.operands);
+    }
+  }, [currentIndex, dictation, phase, speak]);
+
+  // Stop speech when pausing; cancel on unmount
+  useEffect(() => {
+    if (dictation && phase !== 'playing') {
+      stopDictation();
+    }
+    return () => { stopDictation(); };
+  }, [dictation, phase, stopDictation]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -334,19 +406,21 @@ export function TestInterface(): ReactElement | null {
   }, []);
 
   const handleSubmit = useCallback(() => {
+    const isDictating = !!useAppStore.getState().practiceConfig.dictation;
     const val = inputValRef.current;
     const trimmed = val.trim();
     if (!trimmed || trimmed === '-') {
-      triggerShake();
-      playWrong();
+      if (!isDictating) { triggerShake(); playWrong(); }
       return;
     }
     const answer = Number(trimmed);
-    const currentQuestion = useAppStore.getState().session.questions[currentIndex];
-    const isCorrect = currentQuestion && currentQuestion.answer === answer;
 
-    if (isCorrect) { playCorrect(); triggerFlash(); }
-    else { playWrong(); triggerShake(); }
+    if (!isDictating) {
+      const currentQuestion = useAppStore.getState().session.questions[currentIndex];
+      const isCorrect = currentQuestion && currentQuestion.answer === answer;
+      if (isCorrect) { playCorrect(); triggerFlash(); }
+      else { playWrong(); triggerShake(); }
+    }
 
     submitAnswer(answer);
     setInputVal('');
@@ -357,8 +431,16 @@ export function TestInterface(): ReactElement | null {
     submitAnswer('skipped');
     setInputVal('');
     inputValRef.current = '';
-    playWrong();
+    if (!useAppStore.getState().practiceConfig.dictation) playWrong();
   }, [submitAnswer, playWrong]);
+
+  const handleReplay = useCallback(() => {
+    const state = useAppStore.getState();
+    const q = state.session.questions[state.session.currentIndex];
+    if (q && q.operation === 'add_sub') {
+      speak(q.operands);
+    }
+  }, [speak]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -383,6 +465,8 @@ export function TestInterface(): ReactElement | null {
   const progress = questions.length > 0 ? (currentIndex / questions.length) * 100 : 0;
   const canSubmit = inputVal.trim().length > 0 && inputVal.trim() !== '-';
   const isMultDiv = currentQuestion.operation === 'multiplication' || currentQuestion.operation === 'division';
+  const isDictationActive = dictation && dictationUsable && !isMultDiv;
+  const dictationUnavailable = dictation && !dictationUsable;
 
   return (
     <div className="animate-fade-in" style={pageContainer}>
@@ -394,10 +478,29 @@ export function TestInterface(): ReactElement | null {
           <span style={questionNumberBadgeText}># {currentIndex + 1}</span>
         </div>
 
-        {isMultDiv ? (
-          <MultDivQuestion currentIndex={currentIndex} shakeKey={shakeKey} flashKey={flashKey} inputVal={inputVal} inputRef={inputRef} onInputChange={handleInputChange} onKeyDown={handleKeyDown} />
+        {isDictationActive ? (
+          <DictationInput
+            inputVal={inputVal}
+            inputRef={inputRef}
+            onInputChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onReplay={handleReplay}
+            speaking={speaking}
+          />
         ) : (
-          <AddSubQuestion currentIndex={currentIndex} shakeKey={shakeKey} flashKey={flashKey} inputVal={inputVal} inputRef={inputRef} onInputChange={handleInputChange} onKeyDown={handleKeyDown} />
+          <>
+            {dictationUnavailable && (
+              <div style={dictationUnavailBanner}>
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }} role="img" aria-hidden="true">info</span>
+                Dictation unavailable — no speech voices found in your browser
+              </div>
+            )}
+            {isMultDiv ? (
+              <MultDivQuestion currentIndex={currentIndex} shakeKey={shakeKey} flashKey={flashKey} inputVal={inputVal} inputRef={inputRef} onInputChange={handleInputChange} onKeyDown={handleKeyDown} />
+            ) : (
+              <AddSubQuestion currentIndex={currentIndex} shakeKey={shakeKey} flashKey={flashKey} inputVal={inputVal} inputRef={inputRef} onInputChange={handleInputChange} onKeyDown={handleKeyDown} />
+            )}
+          </>
         )}
       </div>
 
@@ -649,4 +752,52 @@ const hintText: Record<string, string | number> = {
   fontSize: '0.75rem',
   color: 'var(--color-outline)',
   textAlign: 'center',
+};
+
+const dictationContainer: Record<string, string | number> = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '1.25rem',
+};
+
+const dictationHint: Record<string, string | number> = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+};
+
+const dictationHintText: Record<string, string | number> = {
+  fontFamily: 'var(--font-body)',
+  fontSize: '0.875rem',
+  fontWeight: 500,
+  color: 'var(--color-on-surface-variant)',
+};
+
+const dictationUnavailBanner: Record<string, string | number> = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  padding: '0.5rem 0.75rem',
+  marginBottom: '1rem',
+  borderRadius: '0.5rem',
+  fontSize: '0.75rem',
+  fontWeight: 500,
+  color: 'var(--color-on-surface-variant)',
+  backgroundColor: 'var(--color-surface-container)',
+};
+
+const replayButton: Record<string, string | number> = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '44px',
+  height: '44px',
+  borderRadius: '50%',
+  border: '1px solid var(--color-outline-variant)',
+  background: 'var(--color-surface-container)',
+  cursor: 'pointer',
+  color: 'var(--color-primary)',
+  flexShrink: 0,
+  transition: 'background 0.15s ease',
 };

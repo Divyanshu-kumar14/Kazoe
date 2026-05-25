@@ -1,12 +1,7 @@
 import { getSupabase } from './supabase';
+import type { ProfileRow } from './database.types';
 
-export type Profile = {
-  id: string;
-  username: string;
-  points: number;
-  created_at: string;
-  updated_at: string;
-};
+export type Profile = ProfileRow;
 
 export type ProfileResult<T> = { data: T; error?: never } | { data?: never; error: string };
 
