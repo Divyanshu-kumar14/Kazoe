@@ -26,7 +26,7 @@ export default memo(function MultiplayerHome() {
   const [waitingTimeout, setWaitingTimeout] = useState(false);
 
   useEffect(() => {
-    if (matchStatus === 'countdown' && matchId) {
+    if ((matchStatus === 'countdown' || matchStatus === 'playing') && matchId) {
       navigate('/multiplayer/game/' + matchId, { replace: true });
     }
   }, [matchStatus, matchId, navigate]);
