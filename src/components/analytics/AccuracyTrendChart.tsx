@@ -89,7 +89,7 @@ export default function AccuracyTrendChart({ data }: Props) {
                 strokeWidth="1" strokeDasharray="4 4" opacity="0.5"
               />
               <text x={chart.pad.left - 8} y={tick.y + 4} textAnchor="end"
-                style={{ fill: 'var(--color-on-surface-variant)', fontSize: '11px', fontFamily: 'var(--font-mono)' }}
+                style={{ fill: 'var(--color-on-surface-variant)', fontSize: '12px', fontFamily: 'var(--font-mono)' }}
               >
                 {tick.label}
               </text>
@@ -99,7 +99,7 @@ export default function AccuracyTrendChart({ data }: Props) {
           {/* Y-axis label */}
           <text x={12} y={chart.pad.top + chart.chartH / 2} textAnchor="middle"
             transform={`rotate(-90, 12, ${chart.pad.top + chart.chartH / 2})`}
-            style={{ fill: 'var(--color-on-surface-variant)', fontSize: '10px', fontFamily: 'var(--font-body)' }}
+            style={{ fill: 'var(--color-on-surface-variant)', fontSize: '12px', fontFamily: 'var(--font-body)' }}
           >
             Accuracy
           </text>
@@ -107,7 +107,7 @@ export default function AccuracyTrendChart({ data }: Props) {
           {/* X-axis labels */}
           {xTicks.map((p, i) => (
             <text key={`xtick-${i}`} x={p.x} y={chart.H - chart.pad.bottom + 16} textAnchor="middle"
-              style={{ fill: 'var(--color-on-surface-variant)', fontSize: '10px', fontFamily: 'var(--font-mono)' }}
+              style={{ fill: 'var(--color-on-surface-variant)', fontSize: '12px', fontFamily: 'var(--font-mono)' }}
             >
               {p.index + 1}
             </text>
@@ -115,7 +115,7 @@ export default function AccuracyTrendChart({ data }: Props) {
 
           {/* X-axis label */}
           <text x={chart.pad.left + chart.chartW / 2} y={chart.H - 4} textAnchor="middle"
-            style={{ fill: 'var(--color-on-surface-variant)', fontSize: '10px', fontFamily: 'var(--font-body)' }}
+            style={{ fill: 'var(--color-on-surface-variant)', fontSize: '12px', fontFamily: 'var(--font-body)' }}
           >
             Session #
           </text>

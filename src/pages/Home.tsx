@@ -43,12 +43,12 @@ export default function Home() {
 
   return (
     <div className="flex-1 animate-fade-in-up">
-      <div className="max-w-[1200px] mx-auto px-6 py-10 flex flex-col gap-8">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-8 md:py-10 flex flex-col gap-6 md:gap-8">
         {/* Daily Challenge Banner */}
         <Link
           to="/challenge"
-          className="card card-interactive p-4 md:p-5 flex items-center justify-between gap-4 no-underline"
-          style={{ color: 'inherit', borderLeft: '4px solid var(--color-secondary)' }}
+          className="card card-interactive p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-underline"
+          style={{ color: 'inherit' }}
         >
           <div className="flex items-center gap-4">
             <div

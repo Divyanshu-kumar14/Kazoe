@@ -66,18 +66,24 @@ export const ConfigPanel = memo(function ConfigPanel() {
           <div className="card p-4 flex flex-col gap-3">
             <span className="label-caps">Difficulty Mode</span>
             <label className="flex items-center gap-3 cursor-pointer">
-              <div
-                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+              <button
+                type="button"
+                role="switch"
+                aria-checked={adaptiveDifficulty}
+                className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
                 style={{
                   backgroundColor: adaptiveDifficulty ? 'var(--color-primary)' : 'var(--color-surface-container-high)',
                 }}
-                onClick={() => setConfig({ adaptiveDifficulty: !adaptiveDifficulty })}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setConfig({ adaptiveDifficulty: !adaptiveDifficulty });
+                }}
               >
                 <span
                   className="inline-block size-5 rounded-full bg-white transition-transform shadow-sm"
                   style={{ transform: adaptiveDifficulty ? 'translateX(22px)' : 'translateX(2px)' }}
                 />
-              </div>
+              </button>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold" style={{ color: 'var(--color-on-surface)' }}>
                   Adaptive Difficulty
@@ -94,18 +100,24 @@ export const ConfigPanel = memo(function ConfigPanel() {
           <div className="card p-4 flex flex-col gap-3">
             <span className="label-caps">Session Mode</span>
             <label className="flex items-center gap-3 cursor-pointer">
-              <div
-                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+              <button
+                type="button"
+                role="switch"
+                aria-checked={focusMode}
+                className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
                 style={{
                   backgroundColor: focusMode ? 'var(--color-primary)' : 'var(--color-surface-container-high)',
                 }}
-                onClick={() => setConfig({ focusMode: !focusMode })}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setConfig({ focusMode: !focusMode });
+                }}
               >
                 <span
                   className="inline-block size-5 rounded-full bg-white transition-transform shadow-sm"
                   style={{ transform: focusMode ? 'translateX(22px)' : 'translateX(2px)' }}
                 />
-              </div>
+              </button>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold" style={{ color: 'var(--color-on-surface)' }}>
                   Focus Mode
@@ -123,18 +135,24 @@ export const ConfigPanel = memo(function ConfigPanel() {
             <div className="card p-4 flex flex-col gap-3">
               <span className="label-caps">Dictation</span>
               <label className="flex items-center gap-3 cursor-pointer">
-                <div
-                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={dictation}
+                  className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
                   style={{
                     backgroundColor: dictation ? 'var(--color-primary)' : 'var(--color-surface-container-high)',
                   }}
-                  onClick={() => setConfig({ dictation: !dictation })}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setConfig({ dictation: !dictation });
+                  }}
                 >
                   <span
                     className="inline-block size-5 rounded-full bg-white transition-transform shadow-sm"
                     style={{ transform: dictation ? 'translateX(22px)' : 'translateX(2px)' }}
                   />
-                </div>
+                </button>
                 <div className="flex flex-col">
                   <span className="text-sm font-semibold" style={{ color: 'var(--color-on-surface)' }}>
                     Dictation Mode

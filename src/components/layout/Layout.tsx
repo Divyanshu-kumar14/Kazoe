@@ -150,7 +150,7 @@ export const Layout = memo(function Layout() {
         </header>
       )}
 
-      <main id="main-content" className={`flex-1 flex flex-col ${!isTestSession ? 'pt-20 max-md:pt-24' : ''}`}>
+      <main id="main-content" className={`flex-1 flex flex-col ${!isTestSession ? 'pt-36 md:pt-24' : ''}`}>
         <Outlet />
       </main>
 

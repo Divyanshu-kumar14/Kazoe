@@ -159,7 +159,7 @@ export default function MultiplayerResults() {
             Your Stats
           </h3>
           <div className="mt-3 space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--color-surface-container)' }}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 rounded-lg" style={{ backgroundColor: 'var(--color-surface-container)' }}>
               <div className="text-center flex-1">
                 <div className="text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>Correct</div>
                 <div className="mt-0.5 font-mono font-bold text-lg" style={{ color: 'var(--color-on-surface)' }}>{myCorrect}</div>
@@ -183,7 +183,7 @@ export default function MultiplayerResults() {
             Opponent Stats
           </h3>
           <div className="mt-3 space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--color-surface-container)' }}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 rounded-lg" style={{ backgroundColor: 'var(--color-surface-container)' }}>
               <div className="text-center flex-1">
                 <div className="text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>Correct</div>
                 <div className="mt-0.5 font-mono font-bold text-lg" style={{ color: 'var(--color-on-surface)' }}>{oppCorrect}</div>

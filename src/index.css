@@ -134,6 +134,12 @@ button, a {
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
+@media (max-width: 640px) {
+  .card {
+    border-radius: 0.5rem;
+  }
+}
+
 .card:hover {
   box-shadow: 0 2px 6px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06);
 }
@@ -159,6 +165,13 @@ button, a {
   border: none;
   border-radius: 0.5rem;
   transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+@media (max-width: 640px) {
+  .btn-primary {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.9375rem;
+  }
 }
 
 .btn-primary:hover {
@@ -189,6 +202,13 @@ button, a {
   border: 1px solid var(--color-outline-variant);
   border-radius: 0.5rem;
   transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+@media (max-width: 640px) {
+  .btn-secondary {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.9375rem;
+  }
 }
 
 .btn-secondary:hover {
