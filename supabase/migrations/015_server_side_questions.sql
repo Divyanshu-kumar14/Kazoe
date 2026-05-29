@@ -110,7 +110,7 @@ BEGIN
   first_operand := greatest(min_first, floor(random() * greatest(first_max, 1))::int + 1);
 
   running_total := first_operand;
-  operands := operands || jsonb_build_object('value', first_operand);
+  operands := operands || to_jsonb(first_operand);
 
   -- Subsequent operands (matches pickNextAddSubOperand in JS)
   FOR i IN 2..lc.row_count LOOP
@@ -134,7 +134,7 @@ BEGIN
     END IF;
 
     running_total := running_total + operand;
-    operands := operands || jsonb_build_object('value', operand);
+    operands := operands || to_jsonb(operand);
   END LOOP;
 
   RETURN jsonb_build_object(
@@ -276,8 +276,8 @@ BEGIN
     room_code := room_code || substring('ABCDEFGHJKLMNPQRSTUVWXYZ23456789' FROM floor(random() * 29)::int + 1 FOR 1);
   END LOOP;
 
-  -- Generate questions server-side
-  questions := generate_multiplayer_questions(v_level, v_question_type, 60);
+  -- Generate questions server-side, scaling with the time limit
+  questions := generate_multiplayer_questions(v_level, v_question_type, LEAST(400, GREATEST(60, v_time_limit * 2)));
 
   -- Insert match
   INSERT INTO matches (id, status, is_public, player1_id, questions, config, scores, created_at)

@@ -99,9 +99,23 @@ export function useMultiplayerGame() {
         schema: 'public',
         table: 'matches',
         filter: `id=eq.${matchId}`,
-      }, (payload) => {
+      }, async (payload) => {
         const updatedMatch = payload.new as unknown as Match;
-        useMultiplayerStore.getState().setMatch(updatedMatch);
+        const currentMatch = useMultiplayerStore.getState().match;
+
+        // Fetch full match data from DB if status transitions to active or questions are missing
+        if (
+          (updatedMatch.status === 'active' && (!currentMatch || currentMatch.status === 'waiting')) ||
+          (!currentMatch?.questions || currentMatch.questions.length === 0)
+        ) {
+          try {
+            await useMultiplayerStore.getState().recoverMatch(matchId);
+          } catch (err) {
+            console.error('Failed to recover match on status update:', err);
+          }
+        } else {
+          useMultiplayerStore.getState().setMatch(updatedMatch);
+        }
       })
       .subscribe();
 
@@ -147,9 +161,10 @@ export function useMultiplayerGame() {
 
     timerIntervalRef.current = setInterval(() => {
       const state = useMultiplayerStore.getState();
-      const duration = state.match?.config?.timeLimitSeconds ?? 180;
+      const duration = Number.isFinite(state.match?.config?.timeLimitSeconds) ? state.match!.config!.timeLimitSeconds : 180;
       const elapsed = (performance.now() - state.gameStartTime) / 1000;
-      const remaining = Math.max(0, duration - elapsed);
+      const remainingRaw = duration - elapsed;
+      const remaining = Number.isFinite(remainingRaw) ? Math.max(0, remainingRaw) : 0;
 
       if (Math.round(remaining) !== Math.round(state.timeRemaining)) {
         state.tickTimer(remaining);

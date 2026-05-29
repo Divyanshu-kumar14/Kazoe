@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { useMultiplayerStore } from '../store/useMultiplayerStore';
 import { Layout } from '../components/layout/Layout';
 
 import { HomePageSkeleton } from '../components/skeletons/HomePageSkeleton';
@@ -80,33 +81,34 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 }
 
 function MultiplayerGameGuard({ children }: { children: React.ReactNode }) {
-  const [matchStatus, setMatchStatus] = useState<string | null>(null);
+  const matchStatus = useMultiplayerStore((s) => s.matchStatus);
+  const matchId = useMultiplayerStore((s) => s.matchId);
+  const match = useMultiplayerStore((s) => s.match);
+  const [isRecovering, setIsRecovering] = useState(false);
+  const recoveryAttemptedRef = useRef(false);
 
+  // If we have a matchId but no match data (e.g. browser refresh), attempt recovery.
+  // Also recover if matchStatus is countdown/playing but match is null (race on navigation).
   useEffect(() => {
-    let mounted = true;
-    import('../store/useMultiplayerStore').then(({ useMultiplayerStore }) => {
-      if (!mounted) return;
-      setMatchStatus(useMultiplayerStore.getState().matchStatus);
-    });
-    return () => { mounted = false; };
-  }, []);
+    if (matchId && !match && !recoveryAttemptedRef.current) {
+      recoveryAttemptedRef.current = true;
+      setIsRecovering(true);
+      import('../store/useMultiplayerStore').then(({ useMultiplayerStore }) => {
+        useMultiplayerStore.getState().recoverMatch(matchId)
+          .then(() => setIsRecovering(false))
+          .catch(() => setIsRecovering(false));
+      });
+    }
+  }, [matchId, match]);
 
   if (matchStatus === 'finished') return <Navigate to="/multiplayer/results" replace />;
-  if (matchStatus === 'idle') return <Navigate to="/multiplayer" replace />;
+  if (matchStatus === 'idle' && !matchId) return <Navigate to="/multiplayer" replace />;
+  if (isRecovering) return <MultiplayerGameSkeleton />;
   return <>{children}</>;
 }
 
 function MultiplayerResultsGuard({ children }: { children: React.ReactNode }) {
-  const [matchStatus, setMatchStatus] = useState<string | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    import('../store/useMultiplayerStore').then(({ useMultiplayerStore }) => {
-      if (!mounted) return;
-      setMatchStatus(useMultiplayerStore.getState().matchStatus);
-    });
-    return () => { mounted = false; };
-  }, []);
+  const matchStatus = useMultiplayerStore((s) => s.matchStatus);
 
   if (matchStatus !== 'finished') return <Navigate to="/multiplayer" replace />;
   return <>{children}</>;

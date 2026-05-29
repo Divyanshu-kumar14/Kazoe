@@ -32,13 +32,14 @@ export default function MultiplayerResults() {
 
   const myTime = myAnswers
     .filter((a) => a?.isCorrect)
-    .reduce((sum, a) => sum + (a?.timeTaken ?? 0), 0);
+    .reduce((sum, a) => sum + (Number.isFinite(a?.timeTaken) ? a!.timeTaken : 0), 0);
   const oppTime = opponentAnswers
     .filter((a) => a?.isCorrect)
-    .reduce((sum, a) => sum + (a?.timeTaken ?? 0), 0);
+    .reduce((sum, a) => sum + (Number.isFinite(a?.timeTaken) ? a!.timeTaken : 0), 0);
 
   const formatTime = (ms: number) => {
-    const s = ms / 1000;
+    const safe = Number.isFinite(ms) ? Math.max(0, ms) : 0;
+    const s = safe / 1000;
     return s >= 60 ? `${Math.floor(s / 60)}m ${Math.round(s % 60)}s` : `${s.toFixed(1)}s`;
   };
 

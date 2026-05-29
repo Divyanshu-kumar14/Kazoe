@@ -23,6 +23,7 @@ export default memo(function MultiplayerHome() {
   const unsubRef = useRef<(() => void) | null>(null);
 
   const isWaiting = matchStatus === 'waiting' && isCreator && matchId;
+  const [waitingTimeout, setWaitingTimeout] = useState(false);
 
   useEffect(() => {
     if (matchStatus === 'countdown' && matchId) {
@@ -30,26 +31,57 @@ export default memo(function MultiplayerHome() {
     }
   }, [matchStatus, matchId, navigate]);
 
+  // Timeout for creator waiting — if opponent hasn't joined after 60s, show option to cancel
   useEffect(() => {
-    if (!isWaiting || unsubRef.current) return;
+    if (!isWaiting) return;
+    setWaitingTimeout(false);
+    const timer = setTimeout(() => setWaitingTimeout(true), 60_000);
+    return () => clearTimeout(timer);
+  }, [isWaiting]);
 
-    subscribeToMatchUpdate(matchId, (updated) => {
+  useEffect(() => {
+    if (!isWaiting) return;
+    let active = true;
+    let channel: any = null;
+
+    subscribeToMatchUpdate(matchId, async (updated) => {
+      if (!active) return;
       if (updated.status === 'active') {
-        useMultiplayerStore.getState().setMatch(updated);
+        try {
+          await useMultiplayerStore.getState().recoverMatch(matchId);
+        } catch (err) {
+          console.error('Failed to recover match on transition to active:', err);
+          // Do NOT call setMatch(updated) because the realtime payload is partial and lacks questions.
+          // Retry recovering the match after a short delay of 1000ms.
+          if (active) {
+            setTimeout(async () => {
+              if (!active) return;
+              try {
+                await useMultiplayerStore.getState().recoverMatch(matchId);
+              } catch (retryErr) {
+                console.error('Retry to recover match failed:', retryErr);
+              }
+            }, 1000);
+          }
+        }
       }
-    }).then((channel) => {
-      unsubRef.current = () => channel.unsubscribe();
+    }).then((c) => {
+      if (!active) {
+        c.unsubscribe();
+      } else {
+        channel = c;
+        unsubRef.current = () => c.unsubscribe();
+      }
     });
-  }, [isWaiting, matchId]);
 
-  useEffect(() => {
-    const unsub = unsubRef.current;
     return () => {
-      if (unsub) {
-        unsub();
+      active = false;
+      if (channel) {
+        channel.unsubscribe();
       }
+      unsubRef.current = null;
     };
-  }, []);
+  }, [isWaiting, matchId]);
 
   const currentLevelConfig = SOROBAN_LEVELS[multiplayerConfig.level]!;
 
@@ -150,6 +182,11 @@ export default memo(function MultiplayerHome() {
             <p className="text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
               Waiting for opponent to join…
             </p>
+            {waitingTimeout && (
+              <p className="text-xs mt-1" style={{ color: 'var(--color-status-error)' }}>
+                Taking longer than expected. You can cancel and try again.
+              </p>
+            )}
             <button type="button"
               onClick={handleCancelRoom}
               className="mt-2 px-4 py-2 text-sm rounded-md transition-colors"
