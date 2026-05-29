@@ -60,7 +60,7 @@ export default function ActivityHeatmap({ data }: Props) {
           <span className="label-caps">30-Day Activity</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span style={{ fontSize: '0.7rem', color: 'var(--color-on-surface-variant)' }}>Light</span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--color-on-surface-variant)' }}>Light</span>
           <div className="flex gap-0.5">
             {[0.1, 0.3, 0.5, 0.7, 0.9].map((o) => (
               <div
@@ -70,7 +70,7 @@ export default function ActivityHeatmap({ data }: Props) {
               />
             ))}
           </div>
-          <span style={{ fontSize: '0.7rem', color: 'var(--color-on-surface-variant)' }}>Heavy</span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--color-on-surface-variant)' }}>Heavy</span>
         </div>
       </div>
 
@@ -100,7 +100,7 @@ export default function ActivityHeatmap({ data }: Props) {
             textAnchor="middle"
             style={{
               fill: 'var(--color-on-surface-variant)',
-              fontSize: '9px',
+              fontSize: '12px',
               fontFamily: 'var(--font-mono)',
             }}
           >

@@ -44,7 +44,7 @@ export default function DailyChallenge() {
     const { result, grade } = challengeEntry;
     return (
       <div className="flex-1 animate-fade-in-up">
-        <div className="max-w-[600px] mx-auto px-6 py-10 flex flex-col gap-8">
+        <div className="max-w-[600px] mx-auto px-4 sm:px-6 py-10 flex flex-col gap-8">
           {/* Completed Card */}
           <div className="card p-8 md:p-10 text-center flex flex-col gap-5">
             <div
@@ -86,7 +86,7 @@ export default function DailyChallenge() {
               {grade}
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <div className="card p-4 flex flex-col gap-1">
                 <span className="label-caps text-center">Accuracy</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-on-surface)' }}>
@@ -137,7 +137,7 @@ export default function DailyChallenge() {
   // Not yet completed — show the challenge card
   return (
     <div className="flex-1 animate-fade-in-up">
-      <div className="max-w-[600px] mx-auto px-6 py-10 flex flex-col gap-8">
+      <div className="max-w-[600px] mx-auto px-4 sm:px-6 py-10 flex flex-col gap-8">
         {/* Challenge Card */}
         <div className="card p-8 md:p-10 flex flex-col gap-6">
           <div className="flex items-center gap-3 mb-1">
@@ -187,7 +187,7 @@ export default function DailyChallenge() {
               >
                 {Array.from({ length: 10 }, (_, i) => i + 1).map((lvl) => (
                   <option key={lvl} value={lvl}>
-                    {lvl} — {questionType === 'add_sub'
+                    {lvl} , {questionType === 'add_sub'
                       ? SOROBAN_LEVELS[lvl]!.operations.replace(/_/g, ' ')
                       : questionType === 'multiplication' ? 'multiplication' : 'division'}
                   </option>
@@ -268,7 +268,7 @@ export default function DailyChallenge() {
             Challenge Rules
           </h3>
           <ul style={{ margin: 0, paddingLeft: '1.25rem', color: 'var(--color-on-surface-variant)', fontSize: '0.875rem', lineHeight: 1.8 }}>
-            <li>Same seed for everyone worldwide — fair for all</li>
+            <li>Same seed for everyone worldwide, fair for all</li>
             <li>Complete within 2 minutes</li>
             <li>Results are recorded with a special marker</li>
             <li>A new challenge drops every day at midnight</li>

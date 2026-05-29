@@ -36,7 +36,7 @@ export default function Analytics() {
 
         {!hasData && (
           <div
-            className="card p-12 flex flex-col items-center justify-center gap-4 text-center"
+            className="card p-6 sm:p-12 flex flex-col items-center justify-center gap-4 text-center"
             style={{ color: 'var(--color-on-surface-variant)' }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '64px', opacity: 0.3 }} role="img" aria-hidden="true">
@@ -61,25 +61,25 @@ export default function Analytics() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="card p-5 flex flex-col gap-1">
                 <span className="label-caps">Sessions</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 600, color: 'var(--color-on-surface)', letterSpacing: '0.05em' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 600, color: 'var(--color-on-surface)', letterSpacing: '0.05em' }}>
                   {analytics.totalSessions}
                 </span>
               </div>
               <div className="card p-5 flex flex-col gap-1">
                 <span className="label-caps">Overall Accuracy</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 600, color: 'var(--color-on-surface)', letterSpacing: '0.05em' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 600, color: 'var(--color-on-surface)', letterSpacing: '0.05em' }}>
                   {analytics.overallAccuracy}%
                 </span>
               </div>
               <div className="card p-5 flex flex-col gap-1">
                 <span className="label-caps">Best Grade</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 600, color: gradeColor(analytics.bestGrade), letterSpacing: '0.05em' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 600, color: gradeColor(analytics.bestGrade), letterSpacing: '0.05em' }}>
                   {analytics.bestGrade}
                 </span>
               </div>
               <div className="card p-5 flex flex-col gap-1">
                 <span className="label-caps">Day Streak</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 600, color: 'var(--color-on-surface)', letterSpacing: '0.05em' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 600, color: 'var(--color-on-surface)', letterSpacing: '0.05em' }}>
                   {analytics.currentStreak}
                 </span>
               </div>
