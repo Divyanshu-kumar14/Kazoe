@@ -8,6 +8,7 @@ import { useAdaptiveSession } from '../../hooks/useAdaptiveSession';
 import { useFullscreen } from '../../hooks/useFullscreen';
 import { useDictation } from '../../hooks/useDictation';
 import { completeDailyChallenge } from '../../utils/dailyChallenge';
+import { PracticeModeSkeleton } from '../skeletons/PracticeModeSkeleton';
 import { Countdown } from './Countdown';
 import { PausedOverlay } from './PausedOverlay';
 
@@ -469,7 +470,9 @@ export function TestInterface(): ReactElement | null {
   if (phase === 'paused') return <PausedOverlay onResume={togglePause} onQuit={() => { endSession(); navigate(dest); }} />;
 
   const currentQuestion = questions[currentIndex];
-  if (!currentQuestion) return null;
+  if (!currentQuestion) {
+    return <PracticeModeSkeleton />;
+  }
 
   const isWarning = timeLeft <= timeLimitSeconds * 0.2;
   const progress = questions.length > 0 ? (currentIndex / questions.length) * 100 : 0;

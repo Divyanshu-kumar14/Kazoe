@@ -26,13 +26,16 @@ export default memo(function MultiplayerGame() {
   } = useMultiplayerGame();
 
   const question = match?.questions[currentQuestionIndex];
-  const myScore = playerNumber === 1 ? scores[0] : scores[1];
-  const oppScore = playerNumber === 1 ? scores[1] : scores[0];
+  const myScore = Number.isFinite(scores[0]) ? scores[0] : 0;
+  const oppScore = Number.isFinite(scores[1]) ? scores[1] : 0;
+  const displayMyScore = playerNumber === 1 ? myScore : oppScore;
+  const displayOppScore = playerNumber === 1 ? oppScore : myScore;
   const myAttempts = myAnswers.filter((a) => a !== null).length;
-  const displaySeconds = Math.ceil(timeRemaining);
+  const safeTimeRemaining = Number.isFinite(timeRemaining) ? timeRemaining : 0;
+  const displaySeconds = Math.ceil(safeTimeRemaining);
   const timerDisplay = `${Math.floor(displaySeconds / 60)}:${String(displaySeconds % 60).padStart(2, '0')}`;
   const totalDuration = match?.config?.timeLimitSeconds ?? 180;
-  const timerPercent = totalDuration > 0 ? (timeRemaining / totalDuration) * 100 : 0;
+  const timerPercent = totalDuration > 0 ? (safeTimeRemaining / totalDuration) * 100 : 0;
 
   useEffect(() => {
     if (matchStatus === 'finished') {
@@ -90,6 +93,10 @@ export default memo(function MultiplayerGame() {
   }
 
   if (!match || !question) {
+    // If we have a match but ran out of questions, the game is effectively over
+    if (match && matchStatus === 'playing' && currentQuestionIndex >= (match.questions?.length ?? 0)) {
+      return <MultiplayerGameSkeleton />;
+    }
     return <MultiplayerGameSkeleton />;
   }
 
@@ -116,7 +123,7 @@ export default memo(function MultiplayerGame() {
             <div className="flex items-center gap-1.5">
               <div className="size-2.5 rounded-full" style={{ backgroundColor: 'var(--color-primary)' }} />
               <span className="text-sm font-bold" style={{ color: 'var(--color-on-surface)' }}>
-                {myScore}
+                {displayMyScore}
               </span>
               <span className="text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>You</span>
             </div>
@@ -124,7 +131,7 @@ export default memo(function MultiplayerGame() {
             <div className="flex items-center gap-1.5">
               <div className="size-2.5 rounded-full" style={{ backgroundColor: 'var(--color-secondary)' }} />
               <span className="text-sm font-bold" style={{ color: 'var(--color-on-surface)' }}>
-                {oppScore}
+                {displayOppScore}
               </span>
               <span className="text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>Opp</span>
             </div>
@@ -137,13 +144,13 @@ export default memo(function MultiplayerGame() {
               className="h-full rounded-full transition-all duration-200 ease-linear"
               style={{
                 width: `${timerPercent}%`,
-                backgroundColor: timeRemaining > 30 ? 'var(--color-primary)' : 'var(--color-status-error)',
+                backgroundColor: safeTimeRemaining > 30 ? 'var(--color-primary)' : 'var(--color-status-error)',
               }}
             />
           </div>
           <span
             className="font-mono text-sm font-bold tabular-nums shrink-0"
-            style={{ color: timeRemaining > 30 ? 'var(--color-on-surface)' : 'var(--color-status-error)' }}
+            style={{ color: safeTimeRemaining > 30 ? 'var(--color-on-surface)' : 'var(--color-status-error)' }}
           >
             {timerDisplay}
           </span>
@@ -410,7 +417,7 @@ export default memo(function MultiplayerGame() {
               You
             </div>
             <div className="mt-0.5 font-mono font-bold text-lg" style={{ color: 'var(--color-primary)' }}>
-              {myScore}
+              {displayMyScore}
             </div>
             <div className="text-xs mt-0.5" style={{ color: 'var(--color-on-surface-variant)' }}>
               {myAttempts} attempts
@@ -424,7 +431,7 @@ export default memo(function MultiplayerGame() {
               Opponent
             </div>
             <div className="mt-0.5 font-mono font-bold text-lg" style={{ color: 'var(--color-secondary)' }}>
-              {oppScore}
+              {displayOppScore}
             </div>
             <div className="text-xs mt-0.5" style={{ color: 'var(--color-on-surface-variant)' }}>
               live

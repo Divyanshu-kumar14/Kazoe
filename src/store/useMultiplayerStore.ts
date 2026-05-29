@@ -99,7 +99,10 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
 
   gameStartTime: 0,
   questionStartTime: 0,
-  tickTimer: (timeRemaining: number) => set({ timeRemaining }),
+  tickTimer: (timeRemaining: number) => {
+    const safe = Number.isFinite(timeRemaining) ? Math.max(0, timeRemaining) : 0;
+    set({ timeRemaining: safe });
+  },
   timeRemaining: 180,
 
   forfeitTimer: null,
@@ -180,18 +183,74 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
 
   setMatch: (match: Match) => {
     const current = get();
-    if (match.status === 'active' && current.matchStatus === 'waiting') {
-      set({ match, matchStatus: 'countdown' });
-    } else if (match.status === 'finished') {
-      const dbScores = match.scores;
-      const scores: [number, number] = [
-        dbScores?.player1 ?? 0,
-        dbScores?.player2 ?? 0,
-      ];
-      set({ match, matchStatus: 'finished', scores });
-    } else {
-      set({ match });
+    
+    // Merge new match data with current match data in the store to preserve fields like questions and config.
+    // If the local match is null and the incoming update lacks questions (partial Realtime update),
+    // we keep mergedMatch as null to avoid corrupting the store state with a broken/incomplete match.
+    const mergedMatch = current.match ? {
+      ...current.match,
+      ...match,
+      // Ensure we preserve questions and config if they are not in the update payload
+      questions: match.questions !== undefined && match.questions !== null ? match.questions : current.match.questions,
+      config: match.config !== undefined && match.config !== null ? match.config : current.match.config,
+    } : (match.questions && match.questions.length > 0 ? match : null);
+
+    if (!mergedMatch) {
+      return;
     }
+
+    const rawScores = (mergedMatch.scores ?? {}) as Record<string, any>;
+    const p1Score = Number.isFinite(rawScores.player1) ? (rawScores.player1 as number) : 0;
+    const p2Score = Number.isFinite(rawScores.player2) ? (rawScores.player2 as number) : 0;
+    const scores: [number, number] = [p1Score, p2Score];
+
+    const playerNumber = current.playerNumber;
+    let myAnswers = current.myAnswers.length > 0 ? [...current.myAnswers] : new Array(MULTIPLAYER_QUESTION_POOL).fill(null);
+    let opponentAnswers = current.opponentAnswers.length > 0 ? [...current.opponentAnswers] : new Array(MULTIPLAYER_QUESTION_POOL).fill(null);
+
+    if (playerNumber) {
+      const p1Answers = (rawScores.player1_answers as AnswerPayload[]) || [];
+      const p2Answers = (rawScores.player2_answers as AnswerPayload[]) || [];
+
+      p1Answers.forEach((ans: AnswerPayload) => {
+        const target = playerNumber === 1 ? myAnswers : opponentAnswers;
+        if (target[ans.questionIndex] === null) {
+          target[ans.questionIndex] = ans;
+        }
+      });
+
+      p2Answers.forEach((ans: AnswerPayload) => {
+        const target = playerNumber === 2 ? myAnswers : opponentAnswers;
+        if (target[ans.questionIndex] === null) {
+          target[ans.questionIndex] = ans;
+        }
+      });
+    }
+
+    // Determine the next matchStatus
+    let matchStatus = current.matchStatus;
+    if (mergedMatch.status === 'active' && current.matchStatus === 'waiting') {
+      // Only transition to countdown if we actually have questions loaded in the store
+      if (mergedMatch.questions && mergedMatch.questions.length > 0) {
+        matchStatus = 'countdown';
+      }
+    } else if (mergedMatch.status === 'finished') {
+      matchStatus = 'finished';
+    }
+
+    // Keep the local scores in sync with the database if they are higher
+    const localScores: [number, number] = [
+      Math.max(scores[0], current.scores[0]),
+      Math.max(scores[1], current.scores[1]),
+    ];
+
+    set({
+      match: mergedMatch,
+      matchStatus,
+      scores: localScores,
+      myAnswers,
+      opponentAnswers,
+    });
   },
 
   startCountdown: () => {
@@ -200,7 +259,8 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
 
   startGame: () => {
     const state = get();
-    const duration = state.match?.config?.timeLimitSeconds ?? state.multiplayerConfig.timeLimitSeconds;
+    const rawDuration = state.match?.config?.timeLimitSeconds ?? state.multiplayerConfig.timeLimitSeconds;
+    const duration = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 180;
     const now = performance.now();
     set({
       matchStatus: 'playing',
@@ -222,7 +282,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     if (state.myAnswers[index] !== null) return null;
 
     const endTime = performance.now();
-    const timeTaken = endTime - state.questionStartTime;
+    const timeTaken = state.questionStartTime > 0 ? endTime - state.questionStartTime : 0;
     const isCorrect = answer !== null && answer === question.answer;
 
     const payload: AnswerPayload = {
@@ -239,18 +299,22 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     const nextIndex = index + 1;
     const canAdvance = nextIndex < MULTIPLAYER_QUESTION_POOL;
 
-    const newScores = [...state.scores] as [number, number];
+    const prevScores = [...state.scores] as [number, number];
+    const normalizedScores: [number, number] = [
+      Number.isFinite(prevScores[0]) ? prevScores[0] : 0,
+      Number.isFinite(prevScores[1]) ? prevScores[1] : 0,
+    ];
     if (isCorrect) {
       if (state.playerNumber === 1) {
-        newScores[0] += 1;
+        normalizedScores[0] += 1;
       } else {
-        newScores[1] += 1;
+        normalizedScores[1] += 1;
       }
     }
 
     set({
       myAnswers,
-      scores: newScores,
+      scores: normalizedScores,
       currentQuestionIndex: canAdvance ? nextIndex : index,
       questionStartTime: canAdvance ? endTime : state.questionStartTime,
     });
@@ -267,12 +331,25 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     if (state.matchStatus !== 'playing') return;
 
     const opponentAnswers = [...state.opponentAnswers];
+    const prevPayload = opponentAnswers[payload.questionIndex];
+
+    // Incremental scoring: only adjust by the delta of this single answer,
+    // instead of recomputing from scratch every time. This avoids race
+    // conditions where a DB subscription fires mid-game and corrupts scores.
+    let delta = 0;
+    if (payload.isCorrect) delta = 1;
+    if (prevPayload?.isCorrect) delta -= 1;
+
     opponentAnswers[payload.questionIndex] = payload;
 
-    const oppCorrectCount = opponentAnswers.filter((a) => a?.isCorrect).length;
-    const newScores = [...state.scores] as [number, number];
-    if (state.playerNumber === 1) newScores[1] = oppCorrectCount;
-    else newScores[0] = oppCorrectCount;
+    const prevScores = [...state.scores] as [number, number];
+    const normalizedPrev: [number, number] = [
+      Number.isFinite(prevScores[0]) ? prevScores[0] : 0,
+      Number.isFinite(prevScores[1]) ? prevScores[1] : 0,
+    ];
+    const newScores: [number, number] = [...normalizedPrev];
+    if (state.playerNumber === 1) newScores[1] = Math.max(0, newScores[1] + delta);
+    else newScores[0] = Math.max(0, newScores[0] + delta);
 
     set({ opponentAnswers, scores: newScores });
   },
@@ -362,8 +439,10 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     const currentQuestionIndex = Math.min(MULTIPLAYER_QUESTION_POOL - 1, answeredCount);
 
     const duration = (match as Match).config?.timeLimitSeconds ?? 180;
-    const startedAt = match.started_at ? new Date(match.started_at).getTime() : Date.now();
-    const elapsedSeconds = (Date.now() - startedAt) / 1000;
+    const cleanStartedAt = match.started_at ? match.started_at.replace(' ', 'T') : '';
+    const parsedStartedAt = cleanStartedAt ? new Date(cleanStartedAt).getTime() : NaN;
+    const startedAt = Number.isFinite(parsedStartedAt) ? parsedStartedAt : Date.now();
+    const elapsedSeconds = Math.max(0, (Date.now() - startedAt) / 1000);
     const timeRemaining = Math.max(0, duration - elapsedSeconds);
     const gameStartTime = performance.now() - (elapsedSeconds * 1000);
 
@@ -371,12 +450,16 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     if (match.status === 'finished') {
       matchStatus = 'finished';
     } else if (match.status === 'active') {
-      matchStatus = 'playing';
+      const currentStatus = get().matchStatus;
+      matchStatus = currentStatus === 'waiting' ? 'countdown' : 'playing';
     } else if (match.status === 'waiting') {
       matchStatus = 'waiting';
     }
 
-    const questionStartTime = matchStatus === 'playing' ? gameStartTime : 0;
+    // When recovering mid-game, set questionStartTime to now so the next
+    // answer's timeTaken starts fresh instead of reflecting the entire match
+    // duration which could produce NaN or absurd values.
+    const questionStartTime = matchStatus === 'playing' ? performance.now() : 0;
 
     set({
       userId: activeUserId,

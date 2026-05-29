@@ -7,6 +7,12 @@ export function useGameTimer(
 ) {
   const [timeLeft, setTimeLeft] = useState(timeLimitSeconds);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onTimeUpRef = useRef(onTimeUp);
+  const hasFiredRef = useRef(false);
+
+  useEffect(() => {
+    onTimeUpRef.current = onTimeUp;
+  }, [onTimeUp]);
 
   useEffect(() => {
     if (phase !== 'playing') {
@@ -16,19 +22,21 @@ export function useGameTimer(
       }
       return;
     }
+    hasFiredRef.current = false;
     timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        const next = Math.max(0, prev - 1);
-        if (next === 0 && prev > 0 && onTimeUp) {
-          onTimeUp();
-        }
-        return next;
-      });
+      setTimeLeft((prev) => Math.max(0, prev - 1));
     }, 1000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [phase, onTimeUp]);
+  }, [phase]);
+
+  useEffect(() => {
+    if (timeLeft === 0 && !hasFiredRef.current && onTimeUpRef.current) {
+      hasFiredRef.current = true;
+      onTimeUpRef.current();
+    }
+  }, [timeLeft]);
 
   return { timeLeft, setTimeLeft };
 }
