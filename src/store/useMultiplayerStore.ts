@@ -451,7 +451,11 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       matchStatus = 'finished';
     } else if (match.status === 'active') {
       const currentStatus = get().matchStatus;
-      matchStatus = currentStatus === 'waiting' ? 'countdown' : 'playing';
+      if (currentStatus === 'waiting' || currentStatus === 'countdown') {
+        matchStatus = 'countdown';
+      } else {
+        matchStatus = 'playing';
+      }
     } else if (match.status === 'waiting') {
       matchStatus = 'waiting';
     }
