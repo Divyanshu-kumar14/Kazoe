@@ -199,34 +199,6 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       return;
     }
 
-    const rawScores = (mergedMatch.scores ?? {}) as Record<string, any>;
-    const p1Score = Number.isFinite(rawScores.player1) ? (rawScores.player1 as number) : 0;
-    const p2Score = Number.isFinite(rawScores.player2) ? (rawScores.player2 as number) : 0;
-    const scores: [number, number] = [p1Score, p2Score];
-
-    const playerNumber = current.playerNumber;
-    let myAnswers = current.myAnswers.length > 0 ? [...current.myAnswers] : new Array(MULTIPLAYER_QUESTION_POOL).fill(null);
-    let opponentAnswers = current.opponentAnswers.length > 0 ? [...current.opponentAnswers] : new Array(MULTIPLAYER_QUESTION_POOL).fill(null);
-
-    if (playerNumber) {
-      const p1Answers = (rawScores.player1_answers as AnswerPayload[]) || [];
-      const p2Answers = (rawScores.player2_answers as AnswerPayload[]) || [];
-
-      p1Answers.forEach((ans: AnswerPayload) => {
-        const target = playerNumber === 1 ? myAnswers : opponentAnswers;
-        if (target[ans.questionIndex] === null) {
-          target[ans.questionIndex] = ans;
-        }
-      });
-
-      p2Answers.forEach((ans: AnswerPayload) => {
-        const target = playerNumber === 2 ? myAnswers : opponentAnswers;
-        if (target[ans.questionIndex] === null) {
-          target[ans.questionIndex] = ans;
-        }
-      });
-    }
-
     // Determine the next matchStatus
     let matchStatus = current.matchStatus;
     if (mergedMatch.status === 'active' && current.matchStatus === 'waiting') {
@@ -238,10 +210,56 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       matchStatus = 'finished';
     }
 
+    // CRITICAL: During active gameplay, do NOT overwrite scores or answers
+    // from DB subscription updates. Only broadcast messages (receiveOpponentAnswer)
+    // and local submitAnswer should mutate these during gameplay.
+    // DB subscription payloads are partial and can reset live scores to 0/NaN.
+    if (current.matchStatus === 'playing' && matchStatus !== 'finished') {
+      set({
+        match: mergedMatch,
+        matchStatus,
+      });
+      return;
+    }
+
+    // Outside of gameplay (waiting, countdown, finished, recovery):
+    // apply scores and answers from DB.
+    const rawScores = (mergedMatch.scores ?? {}) as Record<string, unknown>;
+    const p1Score = Number.isFinite(rawScores.player1) ? (rawScores.player1 as number) : 0;
+    const p2Score = Number.isFinite(rawScores.player2) ? (rawScores.player2 as number) : 0;
+    const scores: [number, number] = [p1Score, p2Score];
+
+    const playerNumber = current.playerNumber;
+    const myAnswers = current.myAnswers.length > 0 ? [...current.myAnswers] : new Array(MULTIPLAYER_QUESTION_POOL).fill(null);
+    const opponentAnswers = current.opponentAnswers.length > 0 ? [...current.opponentAnswers] : new Array(MULTIPLAYER_QUESTION_POOL).fill(null);
+
+    if (playerNumber) {
+      const p1Answers = Array.isArray(rawScores.player1_answers) ? (rawScores.player1_answers as AnswerPayload[]) : [];
+      const p2Answers = Array.isArray(rawScores.player2_answers) ? (rawScores.player2_answers as AnswerPayload[]) : [];
+
+      p1Answers.forEach((ans: AnswerPayload) => {
+        if (ans && typeof ans.questionIndex === 'number') {
+          const target = playerNumber === 1 ? myAnswers : opponentAnswers;
+          if (target[ans.questionIndex] === null) {
+            target[ans.questionIndex] = ans;
+          }
+        }
+      });
+
+      p2Answers.forEach((ans: AnswerPayload) => {
+        if (ans && typeof ans.questionIndex === 'number') {
+          const target = playerNumber === 2 ? myAnswers : opponentAnswers;
+          if (target[ans.questionIndex] === null) {
+            target[ans.questionIndex] = ans;
+          }
+        }
+      });
+    }
+
     // Keep the local scores in sync with the database if they are higher
     const localScores: [number, number] = [
-      Math.max(scores[0], current.scores[0]),
-      Math.max(scores[1], current.scores[1]),
+      Math.max(scores[0], Number.isFinite(current.scores[0]) ? current.scores[0] : 0),
+      Math.max(scores[1], Number.isFinite(current.scores[1]) ? current.scores[1] : 0),
     ];
 
     set({
@@ -418,21 +436,25 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     const opponentAnswers = new Array(MULTIPLAYER_QUESTION_POOL).fill(null);
 
     const rawScores = (match.scores ?? {}) as Record<string, unknown>;
-    const p1Score = (rawScores.player1 as number) || 0;
-    const p2Score = (rawScores.player2 as number) || 0;
+    const p1Score = Number.isFinite(rawScores.player1) ? (rawScores.player1 as number) : 0;
+    const p2Score = Number.isFinite(rawScores.player2) ? (rawScores.player2 as number) : 0;
     const scores: [number, number] = [p1Score, p2Score];
 
-    const p1Answers = (rawScores.player1_answers as AnswerPayload[]) || [];
-    const p2Answers = (rawScores.player2_answers as AnswerPayload[]) || [];
+    const p1Answers = Array.isArray(rawScores.player1_answers) ? (rawScores.player1_answers as AnswerPayload[]) : [];
+    const p2Answers = Array.isArray(rawScores.player2_answers) ? (rawScores.player2_answers as AnswerPayload[]) : [];
 
     p1Answers.forEach((ans: AnswerPayload) => {
-      const target = playerNumber === 1 ? myAnswers : opponentAnswers;
-      target[ans.questionIndex] = ans;
+      if (ans && typeof ans.questionIndex === 'number') {
+        const target = playerNumber === 1 ? myAnswers : opponentAnswers;
+        target[ans.questionIndex] = ans;
+      }
     });
 
     p2Answers.forEach((ans: AnswerPayload) => {
-      const target = playerNumber === 2 ? myAnswers : opponentAnswers;
-      target[ans.questionIndex] = ans;
+      if (ans && typeof ans.questionIndex === 'number') {
+        const target = playerNumber === 2 ? myAnswers : opponentAnswers;
+        target[ans.questionIndex] = ans;
+      }
     });
 
     const answeredCount = myAnswers.filter((a) => a !== null).length;

@@ -85,6 +85,7 @@ function MultiplayerGameGuard({ children }: { children: React.ReactNode }) {
   const matchId = useMultiplayerStore((s) => s.matchId);
   const match = useMultiplayerStore((s) => s.match);
   const [isRecovering, setIsRecovering] = useState(false);
+  const [recoveryFailed, setRecoveryFailed] = useState(false);
   const recoveryAttemptedRef = useRef(false);
 
   // If we have a matchId but no match data (e.g. browser refresh), attempt recovery.
@@ -93,16 +94,22 @@ function MultiplayerGameGuard({ children }: { children: React.ReactNode }) {
     if (matchId && !match && !recoveryAttemptedRef.current) {
       recoveryAttemptedRef.current = true;
       setIsRecovering(true);
+      setRecoveryFailed(false);
       import('../store/useMultiplayerStore').then(({ useMultiplayerStore }) => {
         useMultiplayerStore.getState().recoverMatch(matchId)
           .then(() => setIsRecovering(false))
-          .catch(() => setIsRecovering(false));
+          .catch(() => {
+            setIsRecovering(false);
+            setRecoveryFailed(true);
+          });
       });
     }
   }, [matchId, match]);
 
   if (matchStatus === 'finished') return <Navigate to="/multiplayer/results" replace />;
   if (matchStatus === 'idle' && !matchId) return <Navigate to="/multiplayer" replace />;
+  // If recovery failed, redirect to multiplayer home instead of showing skeleton forever
+  if (recoveryFailed) return <Navigate to="/multiplayer" replace />;
   if (isRecovering) return <MultiplayerGameSkeleton />;
   return <>{children}</>;
 }
