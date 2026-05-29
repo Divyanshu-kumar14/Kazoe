@@ -101,7 +101,22 @@ export function useMultiplayerGame() {
         filter: `id=eq.${matchId}`,
       }, async (payload) => {
         const updatedMatch = payload.new as unknown as Match;
-        const currentMatch = useMultiplayerStore.getState().match;
+        const state = useMultiplayerStore.getState();
+        const currentMatch = state.match;
+        const currentStatus = matchStatusRef.current;
+
+        // During active gameplay, only process status transitions to 'finished'.
+        // Score/answer updates are handled exclusively via broadcast messages.
+        if (currentStatus === 'playing') {
+          if (updatedMatch.status === 'finished') {
+            useMultiplayerStore.getState().setMatch(updatedMatch);
+          }
+          // Ignore all other DB updates during gameplay
+          return;
+        }
+
+        // Already finished — nothing to do
+        if (currentStatus === 'finished') return;
 
         // Fetch full match data from DB if status transitions to active or questions are missing
         if (

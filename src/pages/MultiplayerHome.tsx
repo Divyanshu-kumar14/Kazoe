@@ -42,28 +42,43 @@ export default memo(function MultiplayerHome() {
   useEffect(() => {
     if (!isWaiting) return;
     let active = true;
-    let channel: any = null;
+    let channel: ReturnType<typeof subscribeToMatchUpdate> extends Promise<infer T> ? T : never;
+    let recovering = false;
 
     subscribeToMatchUpdate(matchId, async (updated) => {
       if (!active) return;
       if (updated.status === 'active') {
+        // Guard against concurrent recoverMatch calls
+        if (recovering) return;
+        recovering = true;
         try {
           await useMultiplayerStore.getState().recoverMatch(matchId);
+          // Eagerly unsubscribe this channel after successful recovery
+          // to prevent duplicate DB subscriptions when the game page mounts
+          if (channel) {
+            channel.unsubscribe();
+          }
         } catch (err) {
           console.error('Failed to recover match on transition to active:', err);
-          // Do NOT call setMatch(updated) because the realtime payload is partial and lacks questions.
           // Retry recovering the match after a short delay of 1000ms.
           if (active) {
             setTimeout(async () => {
               if (!active) return;
               try {
                 await useMultiplayerStore.getState().recoverMatch(matchId);
+                if (channel) {
+                  channel.unsubscribe();
+                }
               } catch (retryErr) {
                 console.error('Retry to recover match failed:', retryErr);
+              } finally {
+                recovering = false;
               }
             }, 1000);
+            return; // Don't reset recovering here — the timeout will
           }
         }
+        recovering = false;
       }
     }).then((c) => {
       if (!active) {

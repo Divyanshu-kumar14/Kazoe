@@ -435,25 +435,39 @@ export const useAppStore = create<AppStore>((set, get) => {
         });
         saveSessionToStorage({ session: get().session, practiceConfig: get().practiceConfig });
       } else {
-        // Standard mode: auto-finish when all questions answered
-        const finished = nextIndex >= state.session.questions.length;
-        const finishedAt = finished ? Date.now() : null;
-
-        if (finished && state.session.startedAt && finishedAt) {
-          finalizeSession(state, answers, state.session, finishedAt);
+        // Standard mode: extend buffer if running low instead of auto-finishing.
+        // This prevents the white-screen freeze where TestInterface renders a
+        // skeleton because currentIndex >= questions.length during long sessions.
+        const remaining = state.session.questions.length - nextIndex;
+        if (remaining <= 5) {
+          const cfg = {
+            ...SOROBAN_LEVELS[state.practiceConfig.level]!,
+            ...state.practiceConfig.overrides,
+          };
+          const extensionSeed = generateSeed();
+          const extra = generateQuestions(cfg, 50, extensionSeed, state.practiceConfig.questionType);
+          const extendedQuestions = [...state.session.questions, ...extra];
+          const extendedAnswers = [...answers, ...new Array(extra.length).fill(null)];
+          set({
+            session: {
+              ...state.session,
+              questions: extendedQuestions,
+              answers: extendedAnswers,
+              currentIndex: nextIndex,
+              status: 'active',
+            },
+          });
+          saveSessionToStorage({ session: get().session, practiceConfig: get().practiceConfig });
         } else {
           set({
             session: {
               ...state.session,
               answers,
               currentIndex: nextIndex,
-              status: finished ? 'finished' : 'active',
-              finishedAt,
+              status: 'active',
             },
           });
-          if (!finished) {
-            saveSessionToStorage({ session: get().session, practiceConfig: get().practiceConfig });
-          }
+          saveSessionToStorage({ session: get().session, practiceConfig: get().practiceConfig });
         }
       }
     },
