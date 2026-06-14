@@ -122,10 +122,11 @@ export function StatsOverview({ hasHistory, stats }: StatsOverviewProps) {
 
       <Link
         to="/practice"
-        className="btn-secondary w-full justify-center mt-2"
+        className="btn-primary w-full mt-2"
         style={{ fontWeight: 700 }}
       >
         {hasHistory ? 'Practice More' : 'Begin First Session'}
+        <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">arrow_forward</span>
       </Link>
     </div>
   );

@@ -3,13 +3,13 @@ import { useAppStore } from '../../store/useAppStore';
 import { memo } from 'react';
 
 const NAV_LINKS = [
-  { to: '/', label: 'Home' },
-  { to: '/challenge', label: 'Daily Challenge' },
-  { to: '/analytics', label: 'Analytics' },
-  { to: '/practice', label: 'Practice Mode' },
-  { to: '/multiplayer', label: 'Multiplayer' },
-  { to: '/sheets', label: 'Sheets' },
-  { to: '/levels', label: 'Level Guide' },
+  { to: '/', label: 'Home', shortLabel: 'Home' },
+  { to: '/challenge', label: 'Daily Challenge', shortLabel: 'Daily' },
+  { to: '/analytics', label: 'Analytics', shortLabel: 'Stats' },
+  { to: '/practice', label: 'Practice', shortLabel: 'Practice' },
+  { to: '/multiplayer', label: 'Multiplayer', shortLabel: 'Versus' },
+  { to: '/sheets', label: 'Worksheets', shortLabel: 'Sheets' },
+  { to: '/levels', label: 'Level Guide', shortLabel: 'Levels' },
 ];
 
 export const Layout = memo(function Layout() {
@@ -65,7 +65,7 @@ export const Layout = memo(function Layout() {
             </Link>
 
             {/* Nav Links */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
               {NAV_LINKS.map((link) => (
                 <NavLink
                   key={link.to}
@@ -93,13 +93,15 @@ export const Layout = memo(function Layout() {
             <div className="flex items-center gap-2">
               <button type="button"
                 onClick={toggleTheme}
-                className="size-9 flex items-center justify-center rounded-full transition-colors icon-btn"
+                className="size-9 sm:size-9 flex items-center justify-center rounded-full transition-colors icon-btn"
                 style={{
                   color: 'var(--color-on-surface-variant)',
                   backgroundColor: 'transparent',
                   border: 'none',
+                  minWidth: '44px',
+                  minHeight: '44px',
                 }}
-                aria-label="Toggle theme"
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }} role="img" aria-hidden="true">
                   {theme === 'dark' ? 'light_mode' : 'dark_mode'}
@@ -107,11 +109,13 @@ export const Layout = memo(function Layout() {
               </button>
 
               <button type="button"
-                className="size-9 flex items-center justify-center rounded-full transition-colors icon-btn"
+                className="size-9 sm:size-9 flex items-center justify-center rounded-full transition-colors icon-btn"
                 style={{
                   color: 'var(--color-on-surface-variant)',
                   backgroundColor: 'transparent',
                   border: 'none',
+                  minWidth: '44px',
+                  minHeight: '44px',
                 }}
                 aria-label="Settings"
               >
@@ -124,23 +128,26 @@ export const Layout = memo(function Layout() {
 
           {/* Mobile nav */}
           <div className="md:hidden relative">
-            <nav className="flex items-center gap-2 px-4 pb-3 overflow-x-auto snap-x snap-mandatory scroll-pl-4 [-webkit-overflow-scrolling:touch]">
+            <nav className="flex items-center gap-2 px-4 pb-3 overflow-x-auto snap-x snap-mandatory scroll-pl-4 [-webkit-overflow-scrolling:touch]" aria-label="Main navigation">
               {NAV_LINKS.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
                   end={link.to === '/'}
                   className={({ isActive }) =>
-                    `px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors no-underline snap-start ${
+                    `px-4 py-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors no-underline snap-start ${
                       isActive ? 'font-bold' : ''
                     }`
                   }
                   style={({ isActive }) => ({
                     color: isActive ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)',
                     backgroundColor: isActive ? 'var(--color-surface-container)' : 'transparent',
+                    minHeight: '44px',
+                    display: 'flex',
+                    alignItems: 'center',
                   })}
                 >
-                  {link.label}
+                  {link.shortLabel}
                 </NavLink>
               ))}
             </nav>
@@ -174,11 +181,8 @@ export const Layout = memo(function Layout() {
               Kazoe
             </span>
             <span className="text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
-              © 2024 Kazoe. Precision in every bead.
+              © {new Date().getFullYear()} Kazoe. Precision in every bead.
             </span>
-            <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
-              <span>Precision in every bead</span>
-            </div>
           </div>
         </footer>
       )}

@@ -14,10 +14,10 @@ export default function PracticeMode() {
               margin: 0,
             }}
           >
-            Session Configuration
+            Set Up Your Practice
           </h1>
           <p className="mt-2" style={{ color: 'var(--color-on-surface-variant)', fontSize: '1.125rem' }}>
-            Calibrate your dojo. Set the parameters for your next mental arithmetic drill.
+            Choose your level and settings, then jump in.
           </p>
         </div>
         <ConfigPanel />

@@ -213,7 +213,7 @@ export default function DailyChallenge() {
           {/* Info pills */}
           <div className="flex flex-wrap gap-3">
             <span
-              className="px-3 py-1.5 rounded-full text-xs font-semibold"
+              className="px-4 py-2 rounded-full text-xs font-semibold"
               style={{
                 backgroundColor: 'var(--color-surface-container)',
                 color: 'var(--color-on-surface-variant)',
@@ -223,7 +223,7 @@ export default function DailyChallenge() {
               2 minutes
             </span>
             <span
-              className="px-3 py-1.5 rounded-full text-xs font-semibold"
+              className="px-4 py-2 rounded-full text-xs font-semibold"
               style={{
                 backgroundColor: 'var(--color-surface-container)',
                 color: 'var(--color-on-surface-variant)',
@@ -233,7 +233,7 @@ export default function DailyChallenge() {
               Same seed worldwide
             </span>
             <span
-              className="px-3 py-1.5 rounded-full text-xs font-semibold"
+              className="px-4 py-2 rounded-full text-xs font-semibold"
               style={{
                 backgroundColor: 'var(--color-surface-container)',
                 color: 'var(--color-on-surface-variant)',
@@ -246,8 +246,10 @@ export default function DailyChallenge() {
 
           <button type="button"
             onClick={handleStart}
-            className="btn-primary w-full justify-center py-3.5 text-base"
-            style={{ fontWeight: 700, fontSize: '1.125rem' }}
+            className="btn-primary btn-primary-lg w-full py-3.5 text-base"
+            style={{
+              background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-container))',
+            }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '22px' }} role="img" aria-hidden="true">play_arrow</span>
             Start Today's Challenge

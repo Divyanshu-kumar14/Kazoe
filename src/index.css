@@ -15,8 +15,8 @@
   --color-surface-lowest: #ffffff;
 
   --color-on-surface: #1c1c19;
-  --color-on-surface-variant: #3e4949;
-  --color-outline: #6e7979;
+  --color-on-surface-variant: #364141;
+  --color-outline: #566061;
   --color-outline-variant: #bec9c9;
 
   --color-primary: #00595c;
@@ -41,6 +41,12 @@
   --skeleton-shine: #f8fafc;
 
 
+  /* Spacing scale */
+  --space-section: 2rem;
+  --space-card: 1.5rem;
+  --space-element: 1rem;
+  --space-tight: 0.5rem;
+
   /* Z-index scale */
   --z-nav: 10;
   --z-overlay: 30;
@@ -60,7 +66,7 @@
 
   --color-on-surface: #e5e2dd;
   --color-on-surface-variant: #bec9c9;
-  --color-outline: #8e9999;
+  --color-outline: #a0abab;
   --color-outline-variant: #3e4949;
 
   --color-primary: #81d4d8;
@@ -114,16 +120,39 @@ button, a {
   cursor: pointer;
 }
 
+/* ─── Global focus-visible ─── */
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+[role="switch"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  a:focus-visible,
+  button:focus-visible,
+  select:focus-visible,
+  input:focus-visible,
+  [role="switch"]:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 3px solid LinkText;
+    outline-offset: 2px;
+  }
+}
+
 .icon-btn:hover { background-color: var(--color-surface-container) !important; }
-.icon-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.icon-btn:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
 .skip-btn { background: var(--color-surface-container); transition: background 0.15s ease; }
 .skip-btn:hover { background: var(--color-surface-container-high) !important; }
-.skip-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.skip-btn:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
 .submit-btn { transition: all 0.2s ease; }
 .submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,89,92,0.3); }
-.submit-btn:focus-visible { outline: 2px solid var(--color-on-primary); outline-offset: 2px; }
+.submit-btn:focus-visible { outline: 3px solid var(--color-on-primary); outline-offset: 2px; }
 .hover-row:hover { background-color: var(--color-surface-container) !important; }
-.hover-row:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.hover-row:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
 
 /* ─── Utility classes ─── */
 .card {
@@ -148,36 +177,38 @@ button, a {
   transform: translateY(-2px);
 }
 .card-interactive:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 3px solid var(--color-primary);
   outline-offset: 2px;
 }
 
 .btn-primary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.875rem 2rem;
   background: var(--color-primary);
   color: var(--color-on-primary);
   font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 1.0625rem;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 @media (max-width: 640px) {
   .btn-primary {
-    padding: 0.625rem 1.25rem;
-    font-size: 0.9375rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    min-height: 48px;
   }
 }
 
 .btn-primary:hover {
   background: var(--color-primary-container);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,89,92,0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,89,92,0.3), 0 0 0 3px rgba(0,89,92,0.08);
 }
 
 .btn-primary:active {
@@ -185,8 +216,24 @@ button, a {
   box-shadow: none;
 }
 .btn-primary:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 3px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* ─── Hero-level CTA ─── */
+.btn-primary-lg {
+  padding: 1rem 2.5rem;
+  font-size: 1.125rem;
+  border-radius: 0.875rem;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 640px) {
+  .btn-primary-lg {
+    padding: 0.875rem 2rem;
+    font-size: 1.0625rem;
+    min-height: 52px;
+  }
 }
 
 .btn-secondary {
@@ -206,8 +253,9 @@ button, a {
 
 @media (max-width: 640px) {
   .btn-secondary {
-    padding: 0.625rem 1.25rem;
+    padding: 0.75rem 1.25rem;
     font-size: 0.9375rem;
+    min-height: 44px;
   }
 }
 
@@ -216,7 +264,7 @@ button, a {
   border-color: var(--color-outline);
 }
 .btn-secondary:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 3px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -356,8 +404,16 @@ input[type="number"] {
 
 /* ─── Focus ring utility ─── */
 .focus-ring:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 3px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* ─── Mobile touch target minimums ─── */
+@media (max-width: 640px) {
+  .icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 /* ─── Skeleton System ─── */

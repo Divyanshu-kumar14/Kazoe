@@ -3,7 +3,7 @@ import { memo } from 'react';
 export const StatBlock = memo(function StatBlock({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <div
-      className="flex flex-col items-center gap-1 p-3 rounded-xl"
+      className="flex flex-col items-center gap-1.5 p-4 rounded-xl min-h-[80px]"
       style={{ backgroundColor: 'var(--color-surface-container)' }}
     >
       <span
