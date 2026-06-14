@@ -45,9 +45,9 @@ export function WelcomeHeader({
             ? `You've completed ${totalSessions} session${totalSessions !== 1 ? 's' : ''} with ${Math.round(avgAccuracy)}% average accuracy.`
             : 'Start your first practice session and track your journey to Grandmaster.'}
         </p>
-        <Link to="/practice" className="btn-primary mt-2 w-fit">
-          {hasHistory ? 'Continue Practice' : 'Start Practice'}
-          <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">arrow_forward</span>
+        <Link to="/practice" className="btn-primary btn-primary-lg mt-2 w-fit">
+          {hasHistory ? 'Practice Now' : 'Start Your First Session'}
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }} role="img" aria-hidden="true">arrow_forward</span>
         </Link>
       </div>
 

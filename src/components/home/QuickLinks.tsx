@@ -7,6 +7,7 @@ export function QuickLinks() {
         to="/sheets"
         className="card card-interactive p-6 flex flex-col gap-3 no-underline"
         style={{ color: 'inherit' }}
+        aria-label="Open Sheet Generator — create custom practice sheets"
       >
         <div className="flex items-center gap-3">
           <div
@@ -48,6 +49,7 @@ export function QuickLinks() {
         to="/levels"
         className="card card-interactive p-6 flex flex-col gap-3 no-underline"
         style={{ color: 'inherit' }}
+        aria-label="View Level Guide — review curriculum and mastery progress"
       >
         <div className="flex items-center gap-3">
           <div

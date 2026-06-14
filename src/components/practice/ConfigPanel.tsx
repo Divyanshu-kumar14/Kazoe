@@ -223,10 +223,9 @@ export const ConfigPanel = memo(function ConfigPanel() {
 
           <button type="button"
             onClick={handleStart}
-            className="btn-primary w-full justify-center py-3 text-base"
-            style={{ fontWeight: 700 }}
+            className="btn-primary btn-primary-lg w-full py-3.5 text-base"
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }} role="img" aria-hidden="true">play_arrow</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }} role="img" aria-hidden="true">play_arrow</span>
             Begin Practice
           </button>
         </div>
